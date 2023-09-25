@@ -4,40 +4,66 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"examples/util"
-	"github.com/winder/layout"
+	bl "github.com/winder/layout"
 )
 
-func New() tea.Model {
-	bl := layout.New()
-	var models []tea.Model
-	models = append(models, util.NewSimpleModel("9", bl.Add(layout.Layout{})))
-	models = append(models, util.NewSimpleModel("10", bl.Add(layout.Layout{SpanWidth: 2, SpanHeight: 2})))
-	models = append(models, util.NewSimpleModel("11", bl.Add(layout.Layout{})))
-	bl.Wrap()
-	models = append(models, util.NewSimpleModel("12", bl.Add(layout.Layout{SpanHeight: 2})))
-	models = append(models, util.NewSimpleModel("13", bl.Add(layout.Layout{})))
-	bl.Wrap()
-	models = append(models, util.NewSimpleModel("14", bl.Add(layout.Layout{})))
-	models = append(models, util.NewSimpleModel("15", bl.Add(layout.Layout{SpanWidth: 2})))
+type layoutModel struct {
+	layout bl.BubbleLayout
 
-	view := func(models []tea.Model) string {
-		// Glue the views together.
-		// ---------------------------------
-		// |   0   |       -       |   2   |
-		// --------- -  -  1  -  - |--------
-		// |   -   |       -       |   4   |
-		// | - 3 - -------------------------
-		// |   -   |   5   |       6       |
-		// ---------------------------------
-		left := lipgloss.JoinVertical(0, models[0].View(), models[3].View())
-		right := lipgloss.JoinVertical(0, models[2].View(), models[4].View())
-		bottom := lipgloss.JoinHorizontal(0, models[5].View(), models[6].View())
-		center := lipgloss.JoinHorizontal(0, models[1].View(), right)
-		right = lipgloss.JoinVertical(0, center, bottom)
-		return lipgloss.JoinHorizontal(0, left, right)
+	leftID  bl.ID
+	rightID bl.ID
+
+	leftSize  bl.Size
+	rightSize bl.Size
+}
+
+func New() tea.Model {
+	layoutModel := layoutModel{
+		layout: bl.New(),
 	}
-	return util.NewLayoutModel(models, bl, view)
+	layoutModel.leftID = layoutModel.layout.Add(bl.Layout{MaxWidth: 10})
+	layoutModel.rightID = layoutModel.layout.Add(bl.Layout{})
+	return layoutModel
+}
+
+func (m layoutModel) Init() tea.Cmd {
+	return func() tea.Msg {
+		return m.layout.Resize(80, 40)
+	}
+}
+
+func (m layoutModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "esc", "ctrl+c":
+			return m, tea.Quit
+		}
+	case tea.WindowSizeMsg:
+		// Convert WindowSizeMsg to BubbleLayoutMsg.
+		return m, func() tea.Msg {
+			return m.layout.Resize(msg.Width, msg.Height)
+		}
+	case bl.BubbleLayoutMsg:
+		m.leftSize, _ = msg.Size(m.leftID)
+		m.rightSize, _ = msg.Size(m.rightID)
+	}
+
+	return m, nil
+}
+
+func boxStyle(size bl.Size, bg lipgloss.Color) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Background(bg).
+		Width(size.Width).
+		Height(size.Height).
+		Align(lipgloss.Center)
+}
+
+func (m layoutModel) View() string {
+	return lipgloss.JoinHorizontal(0,
+		boxStyle(m.leftSize, "9").Render("left"),
+		boxStyle(m.rightSize, "13").Render("right"))
 }
 
 func main() {

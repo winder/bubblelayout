@@ -9,7 +9,7 @@ import (
 	"github.com/winder/layout"
 )
 
-// simpleModel listens to LayoutMsg events and displays a colored box and its ID.
+// simpleModel listens to BubbleLayoutMsg events and displays a colored box and its ID.
 type simpleModel struct {
 	id         layout.ID
 	background lipgloss.Color
@@ -37,7 +37,7 @@ func (m simpleModel) Init() tea.Cmd {
 }
 
 func (m simpleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(layout.LayoutMsg); ok {
+	if msg, ok := msg.(layout.BubbleLayoutMsg); ok {
 		size, err := msg.Size(m.id)
 		if err != nil {
 			panic(err)

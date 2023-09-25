@@ -30,8 +30,8 @@ func New() tea.Model {
 
 	models = append(models, util.NewSimpleModel("12", bl.Dock(layout.NORTH, 1, 1, 1)))
 	models = append(models, util.NewSimpleModel("13", bl.Dock(layout.SOUTH, 1, 1, 1)))
-	models = append(models, util.NewSimpleModel("14", bl.Dock(layout.WEST, 1, 1, 1)))
-	models = append(models, util.NewSimpleModel("15", bl.Dock(layout.EAST, 1, 1, 1)))
+	models = append(models, util.NewSimpleModel("14", bl.Dock(layout.WEST, 1, 10, 10)))
+	models = append(models, util.NewSimpleModel("15", bl.Dock(layout.EAST, 1, 10, 10)))
 
 	view := func(models []tea.Model) string {
 		// Note: docks should be joined in the order they are defined.

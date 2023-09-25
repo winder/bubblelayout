@@ -37,7 +37,7 @@ func (m layoutModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	case tea.WindowSizeMsg:
-		// Convert WindowSizeMsg to LayoutMsg.
+		// Convert WindowSizeMsg to BubbleLayoutMsg.
 		return m, func() tea.Msg {
 			return m.layout.Resize(msg.Width, msg.Height)
 		}

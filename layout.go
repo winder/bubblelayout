@@ -12,12 +12,12 @@ type Size struct {
 	Height int
 }
 
-type LayoutMsg struct {
+type BubbleLayoutMsg struct {
 	size map[ID]*Size
 }
 
 // Size returns the size allocated for a view.
-func (l LayoutMsg) Size(id ID) (Size, error) {
+func (l BubbleLayoutMsg) Size(id ID) (Size, error) {
 	s, ok := l.size[id]
 	if !ok {
 		return Size{}, fmt.Errorf("view not registered")
@@ -144,8 +144,8 @@ type sizePreference struct {
 
 type Grid [][]Layout
 
-func (g Grid) makeMessage(wDims, hDims []int) LayoutMsg {
-	msg := LayoutMsg{
+func (g Grid) makeMessage(wDims, hDims []int) BubbleLayoutMsg {
+	msg := BubbleLayoutMsg{
 		size: make(map[ID]*Size),
 	}
 
@@ -217,7 +217,7 @@ type BubbleLayout interface {
 	Add(Layout) ID
 	Wrap()
 	Dock(Cardinal, int, int, int) ID
-	Resize(width, height int) LayoutMsg
+	Resize(width, height int) BubbleLayoutMsg
 	Validate() error
 }
 
@@ -435,9 +435,9 @@ func mergeDocks(g Grid, docks []dock) Grid {
 			north := Layout{
 				id:              d.id,
 				SpanWidth:       gridWidth,
-				MinHeight:       d.min / gridWidth,
-				PreferredHeight: d.preferred / gridWidth,
-				MaxHeight:       d.max / gridWidth,
+				MinHeight:       d.min,
+				PreferredHeight: d.preferred,
+				MaxHeight:       d.max,
 			}
 			northRow := make([]Layout, 0, gridWidth)
 			for i := 0; i < gridWidth; i++ {
@@ -451,9 +451,9 @@ func mergeDocks(g Grid, docks []dock) Grid {
 			south := Layout{
 				id:              d.id,
 				SpanWidth:       gridWidth,
-				MinHeight:       d.min / gridWidth,
-				PreferredHeight: d.preferred / gridWidth,
-				MaxHeight:       d.max / gridWidth,
+				MinHeight:       d.min,
+				PreferredHeight: d.preferred,
+				MaxHeight:       d.max,
 			}
 			southRow := make([]Layout, 0, gridWidth)
 			for i := 0; i < gridWidth; i++ {
@@ -467,9 +467,9 @@ func mergeDocks(g Grid, docks []dock) Grid {
 			east := Layout{
 				id:             d.id,
 				SpanHeight:     gridHeight,
-				MinWidth:       d.min / gridHeight,
-				PreferredWidth: d.preferred / gridHeight,
-				MaxWidth:       d.max / gridHeight,
+				MinWidth:       d.min,
+				PreferredWidth: d.preferred,
+				MaxWidth:       d.max,
 			}
 			for i := 0; i < gridHeight; i++ {
 				ret[i] = append(ret[i], east)
@@ -481,9 +481,9 @@ func mergeDocks(g Grid, docks []dock) Grid {
 			west := Layout{
 				id:             d.id,
 				SpanHeight:     gridHeight,
-				MinWidth:       d.min / gridHeight,
-				PreferredWidth: d.preferred / gridHeight,
-				MaxWidth:       d.max / gridHeight,
+				MinWidth:       d.min,
+				PreferredWidth: d.preferred,
+				MaxWidth:       d.max,
 			}
 			for i := 0; i < gridHeight; i++ {
 				ret[i] = append([]Layout{west}, ret[i]...)
@@ -563,7 +563,7 @@ func (bl *bubbleLayout) Validate() error {
 }
 
 // Resize recalculates the layout based on the current terminal size.
-func (bl *bubbleLayout) Resize(width, height int) LayoutMsg {
+func (bl *bubbleLayout) Resize(width, height int) BubbleLayoutMsg {
 	if err := bl.Validate(); err != nil {
 		panic(err)
 	}
