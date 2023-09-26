@@ -107,24 +107,24 @@ func TestComplex(t *testing.T) {
 	msg := l.Resize(100, 75)
 
 	{
-		for _, id := range []int{1, 3, 5, 6} {
-			size, err := msg.Size(layout.ID(id))
+		for _, id := range []layout.ID{ids[0], ids[2], ids[4], ids[5]} {
+			size, err := msg.Size(id)
 			require.NoError(t, err)
 			assert.Equal(t, layout.Size{Width: 25, Height: 25}, size, "1x1 cell should be 25x25")
 		}
 	}
 	{
-		size, err := msg.Size(2)
+		size, err := msg.Size(ids[1])
 		require.NoError(t, err)
 		assert.Equal(t, layout.Size{Width: 50, Height: 50}, size, "2x2 cell should be 50x50")
 	}
 	{
-		size, err := msg.Size(4)
+		size, err := msg.Size(ids[3])
 		require.NoError(t, err)
 		assert.Equal(t, layout.Size{Width: 25, Height: 50}, size, "1x2 cell should be 25x50")
 	}
 	{
-		size, err := msg.Size(7)
+		size, err := msg.Size(ids[6])
 		require.NoError(t, err)
 		assert.Equal(t, layout.Size{Width: 50, Height: 25}, size, "2x1 cell should be 50x25")
 	}

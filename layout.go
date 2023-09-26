@@ -119,7 +119,7 @@ func (pg preferenceGroup) computeDims(allocated int) []int {
 	last := -1
 	if remainder != 0 && len(growers) != 0 {
 		split := remainder / len(growers)
-		for idx, _ := range growers {
+		for idx := range growers {
 			dims[idx] = dims[idx] + split
 			remainder -= split
 			last = idx
