@@ -55,9 +55,10 @@ func (m layoutModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func boxStyle(size bl.Size, bg lipgloss.Color) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Background(bg).
+		Foreground(lipgloss.Color("0")).
 		Width(size.Width).
 		Height(size.Height).
-		Align(lipgloss.Center)
+		Align(lipgloss.Center, lipgloss.Center)
 }
 
 func (m layoutModel) View() string {

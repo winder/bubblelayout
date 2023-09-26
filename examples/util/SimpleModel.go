@@ -51,9 +51,10 @@ func (m simpleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m simpleModel) View() string {
 	st := lipgloss.NewStyle().
 		Background(m.background).
+		Foreground(lipgloss.Color("0")).
 		Width(m.w).
 		Height(m.h).
-		Align(lipgloss.Center)
+		Align(lipgloss.Center, lipgloss.Center)
 	if m.message != "" {
 		return st.Render(m.message)
 	}
