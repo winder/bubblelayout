@@ -19,10 +19,11 @@ type layoutModel struct {
 
 func New() tea.Model {
 	layoutModel := layoutModel{
-		layout: bl.New(),
+		layout: bl.NewWithConstraints(bl.PreferenceGroup{{Max: 10}, {Grow: true}}, nil),
 	}
-	layoutModel.leftID = layoutModel.layout.Add(bl.Cell{MaxWidth: 10})
-	layoutModel.rightID = layoutModel.layout.Add(bl.Cell{})
+	layoutModel.leftID = layoutModel.layout.Add("")
+	layoutModel.rightID = layoutModel.layout.Add("")
+
 	return layoutModel
 }
 

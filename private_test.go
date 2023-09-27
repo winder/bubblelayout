@@ -10,8 +10,8 @@ import (
 func TestPreferenceConstraints(t *testing.T) {
 	testcases := []struct {
 		name string
-		row  []sizePreference
-		col  []sizePreference
+		row  []BoundSize
+		col  []BoundSize
 		err  error
 	}{
 		{
@@ -21,34 +21,34 @@ func TestPreferenceConstraints(t *testing.T) {
 			err:  nil,
 		}, {
 			name: "no violations 2",
-			row: []sizePreference{
-				{min: 1, preferred: []int{1}, max: 10},
-				{min: 5, preferred: []int{1}, max: 10},
+			row: []BoundSize{
+				{Min: 1, Preferred: 1, Max: 10},
+				{Min: 5, Preferred: 1, Max: 10},
 			},
-			col: []sizePreference{
-				{min: 1, preferred: []int{1}, max: 10},
-				{min: 5, preferred: []int{1}, max: 10},
+			col: []BoundSize{
+				{Min: 1, Preferred: 1, Max: 10},
+				{Min: 5, Preferred: 1, Max: 10},
 			},
 			err: nil,
 		}, {
 			name: "row violation",
-			row: []sizePreference{
-				{min: 10, preferred: []int{1}, max: 1},
+			row: []BoundSize{
+				{Min: 10, Preferred: 1, Max: 1},
 			},
-			col: []sizePreference{},
+			col: []BoundSize{},
 			err: makeRowViolation(0, 10, 1),
 		}, {
 			name: "col violation",
-			row:  []sizePreference{},
-			col: []sizePreference{
-				{min: 10, preferred: []int{1}, max: 1},
+			row:  []BoundSize{},
+			col: []BoundSize{
+				{Min: 10, Preferred: 1, Max: 1},
 			},
 			err: makeColViolation(0, 10, 1),
 		}, {
 			name: "violation index",
-			row:  []sizePreference{},
-			col: []sizePreference{
-				{}, {}, {}, {}, {min: 10, preferred: []int{1}, max: 1},
+			row:  []BoundSize{},
+			col: []BoundSize{
+				{}, {}, {}, {}, {Min: 10, Preferred: 1, Max: 1},
 			},
 			err: makeColViolation(4, 10, 1),
 		},
@@ -68,112 +68,112 @@ func TestPreferenceConstraints(t *testing.T) {
 func TestPreferenceGroup(t *testing.T) {
 	testcases := []struct {
 		name      string
-		pg        preferenceGroup
+		pg        PreferenceGroup
 		allocated int
 		expected  []int
 	}{
 		{
 			name:      "empty",
-			pg:        preferenceGroup{},
+			pg:        PreferenceGroup{},
 			allocated: 80,
 			expected:  nil,
 		}, {
 			name: "one",
-			pg: preferenceGroup{
-				{min: 1, preferred: []int{5}, max: 10},
+			pg: PreferenceGroup{
+				{Min: 1, Preferred: 5, Max: 10},
 			},
 			allocated: 80,
 			expected:  []int{5},
 		}, {
-			name: "one grow to max",
-			pg: preferenceGroup{
-				{max: 10, grow: false},
+			name: "one Grow to Max",
+			pg: PreferenceGroup{
+				{Max: 10, Grow: false},
 			},
 			allocated: 80,
 			expected:  []int{10},
 		}, {
-			name: "one grow to allocated size",
-			pg: preferenceGroup{
-				{min: 1, preferred: []int{1}, max: 1000, grow: true},
+			name: "one Grow to allocated size",
+			pg: PreferenceGroup{
+				{Min: 1, Preferred: 1, Max: 1000, Grow: true},
 			},
 			allocated: 80,
 			expected:  []int{80},
 		}, {
-			name: "two even empty grow",
-			pg: preferenceGroup{
+			name: "two even empty Grow",
+			pg: PreferenceGroup{
 				{},
 				{},
 			},
 			allocated: 80,
 			expected:  []int{40, 40},
 		}, {
-			name: "two uneven to max",
-			pg: preferenceGroup{
-				{max: 10},
-				{max: 70},
+			name: "two uneven to Max",
+			pg: PreferenceGroup{
+				{Max: 10},
+				{Max: 70},
 			},
 			allocated: 80,
 			expected:  []int{10, 70},
 		}, {
-			name: "two uneven grow and max",
-			pg: preferenceGroup{
-				{max: 10},
+			name: "two uneven Grow and Max",
+			pg: PreferenceGroup{
+				{Max: 10},
 				{},
 			},
 			allocated: 80,
 			expected:  []int{10, 70},
 		}, {
-			name: "three uneven to max",
-			pg: preferenceGroup{
-				{max: 10},
-				{max: 20},
-				{max: 30},
+			name: "three uneven to Max",
+			pg: PreferenceGroup{
+				{Max: 10},
+				{Max: 20},
+				{Max: 30},
 			},
 			allocated: 80,
 			expected:  []int{10, 20, 30},
 		}, {
-			name: "three uneven preference and max",
-			pg: preferenceGroup{
-				{max: 10},
-				{preferred: []int{5, 15}, max: 20},
-				{max: 30},
+			name: "three uneven preference and Max",
+			pg: PreferenceGroup{
+				{Max: 10},
+				{Preferred: 15, Max: 20},
+				{Max: 30},
 			},
 			allocated: 80,
 			expected:  []int{10, 15, 30},
 		}, {
 			name: "three uneven over allocated",
-			pg: preferenceGroup{
-				{max: 10},
-				{preferred: []int{95, 15}},
-				{max: 30},
+			pg: PreferenceGroup{
+				{Max: 10},
+				{Preferred: 95},
+				{Max: 30},
 			},
 			allocated: 80,
 			expected:  []int{10, 40, 30},
 		}, {
-			name: "just enough for min",
-			pg: preferenceGroup{
-				{min: 20, preferred: []int{30}, max: 40},
-				{min: 20, preferred: []int{30}, max: 40},
-				{min: 20, preferred: []int{30}, max: 40},
-				{min: 20, preferred: []int{30}, max: 40},
+			name: "just enough for Min",
+			pg: PreferenceGroup{
+				{Min: 20, Preferred: 30, Max: 40},
+				{Min: 20, Preferred: 30, Max: 40},
+				{Min: 20, Preferred: 30, Max: 40},
+				{Min: 20, Preferred: 30, Max: 40},
 			},
 			allocated: 80,
 			expected:  []int{20, 20, 20, 20},
 		}, {
-			name: "go below min when over allocated",
-			pg: preferenceGroup{
-				{min: 25, preferred: []int{30}, max: 40},
-				{min: 25, preferred: []int{30}, max: 40},
-				{min: 25, preferred: []int{30}, max: 40},
-				{min: 25, preferred: []int{30}, max: 40},
+			name: "go below Min when over allocated",
+			pg: PreferenceGroup{
+				{Min: 25, Preferred: 30, Max: 40},
+				{Min: 25, Preferred: 30, Max: 40},
+				{Min: 25, Preferred: 30, Max: 40},
+				{Min: 25, Preferred: 30, Max: 40},
 			},
 			allocated: 80,
 			expected:  []int{20, 20, 20, 20},
 		}, {
 			name: "remainder",
-			pg: preferenceGroup{
-				{max: 30, grow: true},
-				{max: 30, grow: true},
+			pg: PreferenceGroup{
+				{Max: 30, Grow: true},
+				{Max: 30, Grow: true},
 			},
 			allocated: 61,
 			expected:  []int{30, 31},
@@ -192,70 +192,151 @@ func TestPreferenceGroup(t *testing.T) {
 
 func TestExpandSpans(t *testing.T) {
 	testcases := []struct {
-		name     string
-		input    Grid
-		expected Grid
+		name        string
+		inputLayout Grid
+		inputString func(*bubbleLayout) Grid
+		expected    Grid
 	}{
 		{
 			name: "no expand",
-			input: [][]layout{
-				{{id: 1}, {id: 2}},
+			inputLayout: [][]layout{
+				{{id: 1}, {id: 2, wrap: true}},
 				{{id: 3}, {id: 4}},
 			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("")
+				bl.Add("wrap")
+				bl.Add("")
+				bl.Add("")
+				return bl.layouts
+			},
 			expected: [][]layout{
-				{{id: 1}, {id: 2}},
+				{{id: 1}, {id: 2, wrap: true}},
 				{{id: 3}, {id: 4}},
 			},
 		}, {
 			name: "horizontal span",
-			input: [][]layout{
-				{{id: 1, Cell: Cell{SpanWidth: 2}}},
+			inputLayout: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2}, wrap: true}},
 				{{id: 2}, {id: 3}},
 			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("spanw 2, wrap")
+				bl.Add("")
+				bl.Add("")
+				return bl.layouts
+			},
 			expected: [][]layout{
-				{{id: 1, Cell: Cell{SpanWidth: 2}}, {id: 1, Cell: Cell{SpanWidth: 2, wDuplicate: true}}},
+				{{id: 1, Cell: Cell{SpanWidth: 2}, wrap: true}, {id: 1, Cell: Cell{SpanWidth: 2, wDuplicate: true}, wrap: true}},
 				{{id: 2}, {id: 3}},
 			},
 		}, {
-			name: "horizontal span and expand",
-			input: [][]layout{
-				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 3}}},
+			name: "horizontal span and expand, with padding",
+			inputLayout: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 3}, wrap: true}},
 				{{id: 3}, {id: 4}},
 			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("")
+				bl.Add("spanx 3, wrap")
+				bl.Add("")
+				bl.Add("")
+				return bl.layouts
+			},
 			expected: [][]layout{
-				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 3}}, {id: 2, Cell: Cell{SpanWidth: 3, wDuplicate: true}}, {id: 2, Cell: Cell{SpanWidth: 3, wDuplicate: true}}},
-				{{id: 3}, {id: 4}},
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 3}, wrap: true}, {id: 2, Cell: Cell{SpanWidth: 3, wDuplicate: true}, wrap: true}, {id: 2, Cell: Cell{SpanWidth: 3, wDuplicate: true}, wrap: true}},
+				{{id: 3}, {id: 4}, {id: 0}, {id: 0}},
 			},
 		}, {
 			name: "vertical span",
-			input: [][]layout{
-				{{id: 1, Cell: Cell{SpanHeight: 2}}, {id: 2}},
+			inputLayout: [][]layout{
+				{{id: 1, Cell: Cell{SpanHeight: 2}}, {id: 2, wrap: true}},
 				{{id: 3}},
 			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("spanh 2")
+				bl.Add("wrap")
+				bl.Add("")
+				return bl.layouts
+			},
 			expected: [][]layout{
-				{{id: 1, Cell: Cell{SpanHeight: 2}}, {id: 2}},
+				{{id: 1, Cell: Cell{SpanHeight: 2}}, {id: 2, wrap: true}},
 				{{id: 1, Cell: Cell{SpanHeight: 2, hDuplicate: true}}, {id: 3}},
 			},
 		}, {
 			name: "vertical span and expand",
-			input: [][]layout{
+			inputLayout: [][]layout{
 				{{id: 1, Cell: Cell{SpanHeight: 2}}},
+			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("spanh 2")
+				return bl.layouts
 			},
 			expected: [][]layout{
 				{{id: 1, Cell: Cell{SpanHeight: 2}}},
 				{{id: 1, Cell: Cell{SpanHeight: 2, hDuplicate: true}}},
 			},
 		}, {
+			name: "test empty space",
+			inputLayout: [][]layout{
+				{{id: 1, wrap: true}},
+				{{id: 2}, {id: 3}},
+			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("wrap")
+				bl.Add("")
+				bl.Add("")
+				return bl.layouts
+			},
+			expected: [][]layout{
+				{{id: 1, wrap: true}, {id: 0}},
+				{{id: 2}, {id: 3}},
+			},
+		}, {
+			name: "empty space 2d expand at horizontal end",
+			inputLayout: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2}}},
+			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("")
+				bl.Add("span 2 2")
+				return bl.layouts
+			},
+			expected: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2}}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2, wDuplicate: true}}},
+				{{id: 0}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2, hDuplicate: true}}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2, hDuplicate: true, wDuplicate: true}}},
+			},
+		}, {
+			name: "empty space 2d expand at vertical end",
+			inputLayout: [][]layout{
+				{{id: 1, wrap: true}},
+				{{id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2}}},
+			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("wrap")
+				bl.Add("span 2 2")
+				return bl.layouts
+			},
+			expected: [][]layout{
+				{{id: 1, wrap: true}, {id: 0}},
+				{{id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2}}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2, wDuplicate: true}}},
+				{{id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2, hDuplicate: true}}, {id: 2, Cell: Cell{SpanHeight: 2, SpanWidth: 2, hDuplicate: true, wDuplicate: true}}},
+			},
+		}, {
 			name: "vertical and horizontal span and overflow",
-			input: [][]layout{
+			inputLayout: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}},
+			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("span 2 2")
+				return bl.layouts
 			},
 			expected: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, wDuplicate: true}}},
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true}}, {id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}}},
 			},
 		}, {
-			// input:
+			// inputLayout:
 			// ---------------------------------
 			// | 1        | 2 (2, 2) |    3    |
 			// ---------------------------------
@@ -272,21 +353,34 @@ func TestExpandSpans(t *testing.T) {
 			// |   -   |   6   |       7       |
 			// ---------------------------------
 			name: "complex",
-			input: [][]layout{
-				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 3}},
-				{{id: 4, Cell: Cell{SpanHeight: 2}}, {id: 5}},
+			inputLayout: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 3, wrap: true}},
+				{{id: 4, Cell: Cell{SpanHeight: 2}}, {id: 5, wrap: true}},
 				{{id: 6}, {id: 7, Cell: Cell{SpanWidth: 2}}},
 			},
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("")
+				bl.Add("span 2 2")
+				bl.Add("wrap")
+				bl.Add("spanh 2")
+				bl.Add("wrap")
+				bl.Add("")
+				bl.Add("spanw 2")
+				return bl.layouts
+			},
 			expected: [][]layout{
-				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, wDuplicate: true}}, {id: 3}},
-				{{id: 4, Cell: Cell{SpanHeight: 2}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}}, {id: 5}},
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, wDuplicate: true}}, {id: 3, wrap: true}},
+				{{id: 4, Cell: Cell{SpanHeight: 2}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}}, {id: 5, wrap: true}},
 				{{id: 4, Cell: Cell{SpanHeight: 2, hDuplicate: true}}, {id: 6}, {id: 7, Cell: Cell{SpanWidth: 2}}, {id: 7, Cell: Cell{SpanWidth: 2, wDuplicate: true}}},
 			},
 		}, {
 			name: "prefs even split",
-			input: [][]layout{
+			inputLayout: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
+			// this isn't supported by the string format.
+			// to do something similar you'd use NewWithConstraints
+			inputString: nil,
 			expected: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
 					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}}},
@@ -297,9 +391,12 @@ func TestExpandSpans(t *testing.T) {
 		}, {
 			// these are all 1 larger than "perfs even split", the odd number is discarded.
 			name: "prefs odd split rounding error",
-			input: [][]layout{
+			inputLayout: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 11, MaxHeight: 101, PreferredHeight: 51, MinWidth: 11, MaxWidth: 101, PreferredWidth: 51}}},
 			},
+			// this isn't supported by the string format.
+			// to do something similar you'd use NewWithConstraints
+			inputString: nil,
 			expected: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
 					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}}},
@@ -314,8 +411,19 @@ func TestExpandSpans(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			result := expandSpans(tc.input)
-			assert.Equal(t, tc.expected, result)
+			result1 := expandSpans(tc.inputLayout)
+			assert.Len(t, result1, len(tc.expected), "number of rows mismatch")
+			for i, row := range result1 {
+				assert.Len(t, row, len(tc.expected[i]), "row %d: number of columns mismatch", i)
+			}
+			assert.Equal(t, tc.expected, result1)
+
+			if tc.inputString != nil {
+				bl := New().(*bubbleLayout)
+
+				grid := tc.inputString(bl)
+				assert.Equal(t, tc.inputLayout, grid)
+			}
 		})
 	}
 }
@@ -326,7 +434,7 @@ func TestMergeDocks_Empty(t *testing.T) {
 
 func TestMergeDocks_InvalidCardinal(t *testing.T) {
 	panicFunc := func() {
-		mergeDocks([][]layout{{{id: 0}}}, []layout{{id: 1, Dock: Dock{Cardinal: 99}}})
+		mergeDocks([][]layout{{{id: 0}}}, []layout{{id: 1, Dock: Dock{Cardinal: "north-north-west"}}})
 	}
 	assert.PanicsWithError(t, "invalid cardinal", panicFunc)
 }
@@ -451,26 +559,26 @@ func TestDistillPrefs(t *testing.T) {
 	testcases := []struct {
 		name      string
 		input     Grid
-		hExpected preferenceGroup
-		wExpected preferenceGroup
+		hExpected PreferenceGroup
+		wExpected PreferenceGroup
 	}{
 		{
 			name: "1x1",
 			input: [][]layout{
 				{{id: 1, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
-			hExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}},
-			wExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}},
+			hExpected: []BoundSize{{Min: 10, Preferred: 50, Max: 100}},
+			wExpected: []BoundSize{{Min: 10, Preferred: 50, Max: 100}},
 		}, {
 			name: "2x2 one defaults",
 			input: [][]layout{
 				{{id: 1, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}, {id: 2}},
 				{{id: 3}, {id: 4, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
-			hExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}, {min: 10, preferred: []int{50}, max: 100}},
-			wExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}, {min: 10, preferred: []int{50}, max: 100}},
+			hExpected: []BoundSize{{Min: 10, Preferred: 50, Max: 100}, {Min: 10, Preferred: 50, Max: 100}},
+			wExpected: []BoundSize{{Min: 10, Preferred: 50, Max: 100}, {Min: 10, Preferred: 50, Max: 100}},
 		}, {
-			name: "1x3 max(min)) and min(max)",
+			name: "1x3 Max(Min)) and Min(Max)",
 			input: [][]layout{
 				{
 					{id: 1, Cell: Cell{MinHeight: 5, MaxHeight: 50, PreferredHeight: 25}},
@@ -478,17 +586,17 @@ func TestDistillPrefs(t *testing.T) {
 					{id: 3},
 				},
 			},
-			hExpected: []sizePreference{{min: 10, preferred: []int{25, 50}, max: 50}},
-			wExpected: []sizePreference{{}, {}, {}},
+			hExpected: []BoundSize{{Min: 10, Preferred: 50, Max: 50}},
+			wExpected: []BoundSize{{}, {}, {}},
 		}, {
-			name: "3x1 max(min)) and min(max)",
+			name: "3x1 Max(Min)) and Min(Max)",
 			input: [][]layout{
 				{{id: 1, Cell: Cell{MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}}},
-				{{id: 2, Cell: Cell{MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
+				{{id: 2, Cell: Cell{MinWidth: 10, MaxWidth: 100, PreferredWidth: 25}}},
 				{{id: 3}},
 			},
-			hExpected: []sizePreference{{}, {}, {}},
-			wExpected: []sizePreference{{min: 10, preferred: []int{25, 50}, max: 50}},
+			hExpected: []BoundSize{{}, {}, {}},
+			wExpected: []BoundSize{{Min: 10, Preferred: 25, Max: 50}},
 		},
 	}
 
@@ -518,15 +626,25 @@ func TestDock(t *testing.T) {
 
 func TestValidate_FailureHeight(t *testing.T) {
 	l := New()
-	l.Add(Cell{MinHeight: 100})
-	l.Add(Cell{MaxHeight: 10})
+	l.Cell(Cell{MinHeight: 100})
+	l.Cell(Cell{MaxHeight: 10})
 	require.ErrorContains(t, l.Validate(), makeRowViolation(0, 100, 10).Error())
 }
 
 func TestValidate_FailureWidth(t *testing.T) {
 	l := New()
-	l.Add(Cell{MinWidth: 100})
+	l.Cell(Cell{MinWidth: 100})
 	l.Wrap()
-	l.Add(Cell{MaxWidth: 10})
+	l.Cell(Cell{MaxWidth: 10})
 	require.ErrorContains(t, l.Validate(), makeColViolation(0, 100, 10).Error())
+}
+
+func TestProvideConstraints(t *testing.T) {
+	col := PreferenceGroup{{Min: 1, Preferred: 2, Max: 3}}
+	row := PreferenceGroup{{Min: 4, Preferred: 5, Max: 6}}
+	l := NewWithConstraints(row, col)
+	require.NoError(t, l.Validate())
+	bl := l.(*bubbleLayout)
+	require.Equal(t, col, bl.hPref)
+	require.Equal(t, row, bl.wPref)
 }

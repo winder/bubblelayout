@@ -11,12 +11,14 @@ BubbleLayout uses a declared layout to translate `tea.WindowSizeMsg` events into
 
 The dependency should be imported, by convention it is renamed to `bl`:
 ```
-	bl "github.com/winder/layout"
+import (
+    bl "github.com/winder/bubblelayout"
+)
 ```
 
 ### Layout Declaration
 
-The layout is typically defined during root component initialization. It defines all of the constrains which should be used when sizing different components by adding `Cell`s and `Dock`s.
+The layout is typically defined during root component initialization. It defines all of the constrains which should be used when sizing different components by adding `Cell`s and `Dock`s. You can use `Cell` and `Dock` to add the raw objects, or define the layout using the string API.
 
 For more details about how layout works, see the [MiG Layout Quick Start Quide (pdf)](http://www.miglayout.com/mavensite/docs/QuickStart.pdf).
 
@@ -26,9 +28,9 @@ Here is a simple example which with two side-by-side sections. Notice that the s
 [Simple example code](./examples/simple/main.go)
 
 ```go
-layout := bl.New()
-leftID := layout.Add(bl.Cell{MaxWidth: 10})
-rightID := layout.Add(bl.Cell{})
+layout: bl.NewWithConstraints(bl.PreferenceGroup{{Max: 10}, {Grow: true}}, nil),
+layoutModel.leftID = layoutModel.layout.Add("")
+layoutModel.rightID = layoutModel.layout.Add("")
 ```
 
 ![Simple example image](./examples/simple/simple.png)
@@ -40,15 +42,15 @@ Here is a more complex example. It defines a layout utilizing horizontal and ver
 
 ```go
 layout := bl.New()
-layout.Add(bl.Cell{}))
-layout.Add(bl.Dock{SpanWidth: 2, SpanHeight: 2}))
-layout.Add(bl.Dock{}))
-layout.Wrap()
-layout.Add(bl.Dock{SpanHeight: 2}))
-layout.Add(bl.Dock{}))
-layout.Wrap()
-layout.Add(bl.Dock{}))
-layout.Add(bl.Dock{SpanWidth: 2}))
+layout.Add("")
+layout.Add("span 2 2")
+layout.Add("wrap")
+
+layout.Add("spanh 2")
+layout.Add("wrap")
+
+layout.Add("")
+layout.Add("spanw 2")
 ```
 
 ![Spans example image](./examples/spans/spans.png)
@@ -61,15 +63,14 @@ Here is an example that has fixed size components at the top and bottom of the l
 
 ```go
 layout := bl.New()
-layout.Add(bl.Cell{})))
-layout.Add(bl.Cell{})))
+layout.Add("")
+layout.Add("wrap")
+layout.Add("span 2 2")
 
-layout.Add(bl.Cell{SpanWidth: 2, SpanHeight: 2})))
-
-layout.Dock(bl.Dock{Cardinal: bl.NORTH, Min: 1, Preferred: 1, Max: 1})))
-layout.Dock(bl.Dock{Cardinal: bl.SOUTH, Min: 1, Preferred: 1, Max: 1})))
-layout.Dock(bl.Dock{Cardinal: bl.WEST, Min: 1, Preferred: 10, Max: 10})))
-layout.Dock(bl.Dock{Cardinal: bl.EAST, Min: 1, Preferred: 10, Max: 10})))
+layout.Add("dock north 1:1:1")
+layout.Add("dock south 1:1:1")
+layout.Add("dock east 1:10:10")
+layout.Add("dock west 1:10:10")
 ```
 
 ![Docking example image](./examples/docking/docking.png)

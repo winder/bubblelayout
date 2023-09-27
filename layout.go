@@ -5,7 +5,7 @@ import (
 )
 
 type ID uint64
-type Cardinal uint
+type Cardinal string
 
 type Size struct {
 	Width  int
@@ -26,66 +26,50 @@ func (l BubbleLayoutMsg) Size(id ID) (Size, error) {
 }
 
 const (
-	NORTH Cardinal = iota + 1
-	SOUTH
-	EAST
-	WEST
+	NORTH Cardinal = "north"
+	SOUTH Cardinal = "south"
+	EAST  Cardinal = "east"
+	WEST  Cardinal = "west"
 )
 
-type preferenceGroup []sizePreference
+type PreferenceGroup []BoundSize
 
-func (pg preferenceGroup) computeDims(allocated int) []int {
+func (pg PreferenceGroup) computeDims(allocated int) []int {
 	if len(pg) == 0 {
 		return nil
 	}
 
-	largestPref := func(maximum int, p []int) int {
-		if len(p) == 0 {
-			return 0
-		}
-		ret := 0
-		for _, v := range p {
-			ret = max(ret, v)
-		}
-		if maximum != 0 {
-			return min(maximum, ret)
-		}
-		return ret
-	}
-
 	dims := make([]int, len(pg))
 	sum := 0
-	// start at min or preference and grow to the allocated size.
+	// start at Min or preference and Grow to the allocated size.
 	growers := make(map[int]struct{})
-	// no preference, start at min and maybe grow to max.
+	// no preference, start at Min and maybe Grow to Max.
 	empty := make(map[int]struct{})
 	evenMax := allocated / len(pg)
 	for idx, p := range pg {
-		pref := largestPref(p.max, p.preferred)
-		pg[idx].largestPref = pref
-		if pref != 0 {
-			dims[idx] = min(pref, evenMax)
-			sum += min(pref, evenMax)
+		if p.Preferred != 0 {
+			dims[idx] = min(p.Preferred, evenMax)
+			sum += min(p.Preferred, evenMax)
 		} else {
-			dims[idx] = p.min
-			sum += p.min
+			dims[idx] = p.Min
+			sum += p.Min
 			// don't count as empty and a grower
-			if !p.grow && p.max != 0 {
+			if !p.Grow && p.Max != 0 {
 				empty[idx] = struct{}{}
 			}
 		}
-		if p.grow || p.max == 0 {
+		if p.Grow || p.Max == 0 {
 			growers[idx] = struct{}{}
 		}
 	}
 
-	// if all preferences are fullfilled and nothing is growing, return the preferred sizes
+	// if all preferences are fullfilled and nothing is growing, return the Preferred sizes
 	if len(growers) == 0 && len(empty) == 0 {
 		return dims
 	}
 
 	// offer an even split to all empty and growing components.
-	// a second pass is made for growers in case the empty components have a max.
+	// a second pass is made for growers in case the empty components have a Max.
 	remainder := allocated - sum
 
 	// keep loping until space runs out or the maximizable components are maximized.
@@ -93,15 +77,15 @@ func (pg preferenceGroup) computeDims(allocated int) []int {
 		split := remainder / (len(growers) + len(empty))
 		for idx, p := range pg {
 			if _, ok := empty[idx]; ok {
-				// otherwise grow up to the max or split
-				diff := p.max - dims[idx]
-				if p.max != 0 && diff < split {
-					// grow to max
+				// otherwise Grow up to the Max or split
+				diff := p.Max - dims[idx]
+				if p.Max != 0 && diff < split {
+					// Grow to Max
 					dims[idx] = dims[idx] + diff
 					remainder -= diff
 					delete(empty, idx)
 				} else {
-					// grow to split
+					// Grow to split
 					dims[idx] = dims[idx] + split
 					remainder -= split
 				}
@@ -120,7 +104,7 @@ func (pg preferenceGroup) computeDims(allocated int) []int {
 		}
 	}
 
-	// if there is still a remainder, it is a rounding error. Add it to the last grower
+	// if there is still a remainder, it is a rounding error. Cell it to the last grower
 	if last != -1 && remainder != 0 {
 		dims[last] = dims[last] + remainder
 	}
@@ -128,12 +112,14 @@ func (pg preferenceGroup) computeDims(allocated int) []int {
 	return dims
 }
 
-type sizePreference struct {
-	min         int
-	preferred   []int
-	largestPref int
-	max         int
-	grow        bool
+// BoundSize is a size that optionally has a lower and/or upper bound and consists of one to three Unit Values.
+// Practically it is a minimum/preferred/maximum size combination but none of the sizes are actually mandatory.
+// If a size is missing (e.g. the preferred) it is null and will be replaced by the most appropriate value.
+type BoundSize struct {
+	Min       int
+	Preferred int
+	Max       int
+	Grow      bool
 }
 
 type Grid [][]layout
@@ -192,14 +178,14 @@ type Cell struct {
 
 	// MinWidth overrides the minimum width that should be allocated for the view.
 	MinWidth int
-	// PreferredWidth overrides the preferred width that should be allocated for the view.
+	// PreferredWidth overrides the Preferred width that should be allocated for the view.
 	PreferredWidth int
 	// MaxWidth overrides the maximum width that should be allocated for the view.
 	MaxWidth int
 
 	// MinHeight overrides the minimum height that should be allocated for the view.
 	MinHeight int
-	// PreferredHeight overrides the preferred height that should be allocated for the view.
+	// PreferredHeight overrides the Preferred height that should be allocated for the view.
 	PreferredHeight int
 	// MaxHeight overrides the maximum height that should be allocated for the view.
 	MaxHeight int
@@ -223,7 +209,7 @@ type Dock struct {
 	// Min overrides the minimum width or height that should be allocated for the view.
 	Min int
 
-	// Preferred overrides the preferred width or height that should be allocated for the view.
+	// Preferred overrides the Preferred width or height that should be allocated for the view.
 	Preferred int
 
 	// Max overrides the maximum width or height that should be allocated for the view.
@@ -231,12 +217,23 @@ type Dock struct {
 }
 
 type BubbleLayout interface {
-	AddStr(string) ID
-	Add(Cell) ID
+	MaybeAdd(string) (ID, error)
+	Add(string) ID
+	Cell(Cell) ID
 	Dock(Dock) ID
 	Wrap()
 	Resize(width, height int) BubbleLayoutMsg
 	Validate() error
+}
+
+// NewWithConstraints creates a new BubbleLayout with the given size constraints.
+func NewWithConstraints(width, height PreferenceGroup) BubbleLayout {
+	// TODO: Verify these constraints.
+	return &bubbleLayout{
+		layouts: [][]layout{{}},
+		wPref:   width,
+		hPref:   height,
+	}
 }
 
 func New() BubbleLayout {
@@ -252,25 +249,37 @@ type bubbleLayout struct {
 
 	// resizeCache is the layouts after being merged with the docks.
 	resizeCache Grid
-	hPref       preferenceGroup
-	wPref       preferenceGroup
+	hPref       PreferenceGroup
+	wPref       PreferenceGroup
 }
 
-// AddStr uses the string notation to define the layout. This is often shorter and easier to read than using the Layout struct.
-func (bl *bubbleLayout) AddStr(str string) ID {
-	// see http://www.miglayout.com/QuickStart.pdf
-	panic("not implemented")
-}
-
-// Add a tea.Model to the layout. The model will be placed in the next available cell.
-func (bl *bubbleLayout) Add(c Cell) ID {
-	bl.idCounter++
-	l := layout{
-		id:   bl.idCounter,
-		Cell: c,
+// MaybeAdd is like Add but returns an error if the string cannot be parsed into a valid Cell or Dock.
+func (bl *bubbleLayout) MaybeAdd(str string) (ID, error) {
+	l, err := convertToLayout(str)
+	if err != nil {
+		return 0, err
 	}
-	idx := len(bl.layouts) - 1
+	if l.Dock == (Dock{}) {
+		return bl.add(l), nil
+	} else {
+		return bl.Dock(l.Dock), nil
+	}
+}
+
+// Add uses the string notation to define the layout. This is often shorter and easier to read than using the Layout struct.
+// If there is an error Add will panic. This is done for code readability, if you want to handle errors use MaybeAdd.
+func (bl *bubbleLayout) Add(str string) ID {
+	id, err := bl.MaybeAdd(str)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+func (bl *bubbleLayout) add(l layout) ID {
+	bl.idCounter++
 	l.id = bl.idCounter
+	idx := len(bl.layouts) - 1
 	bl.layouts[idx] = append(bl.layouts[idx], l)
 
 	if l.wrap {
@@ -281,14 +290,19 @@ func (bl *bubbleLayout) Add(c Cell) ID {
 	return bl.idCounter
 }
 
+// Cell adds a Cell to the Grid. By default, it is placed in the next available cell going left to right top to bottom.
+func (bl *bubbleLayout) Cell(c Cell) ID {
+	return bl.add(layout{Cell: c})
+}
+
 // Wrap inserts a new row into the layout, subsequent calls to Add will place models in the new row.
 func (bl *bubbleLayout) Wrap() {
 	bl.layouts = append(bl.layouts, []layout{})
 }
 
 // Dock places a model on the edge of the layout, spanning the entire width or height.
-// For NORTH and SOUTH components, the width is fixed and the height is defined by min, preferred and max.
-// For EAST and WEST components, the height is fixed and the width is defined by min, preferred and max.
+// For NORTH and SOUTH components, the width is fixed and the height is defined by Min, Preferred and Max.
+// For EAST and WEST components, the height is fixed and the width is defined by Min, Preferred and Max.
 func (bl *bubbleLayout) Dock(dock Dock) ID {
 	bl.idCounter++
 	bl.docks = append(bl.docks, layout{id: bl.idCounter, Dock: dock})
@@ -310,7 +324,7 @@ func (p preferenceConstraintError) Error() string {
 		dir = "col"
 		dim = "height"
 	}
-	return fmt.Sprintf("constraint violation: %s %d: min %s (%d), max %s (%d)", dir, p.idx, dim, p.min, dim, p.max)
+	return fmt.Sprintf("constraint violation: %s %d: Min %s (%d), Max %s (%d)", dir, p.idx, dim, p.min, dim, p.max)
 }
 
 func makeRowViolation(idx, min, max int) error {
@@ -321,16 +335,16 @@ func makeColViolation(idx, min, max int) error {
 	return preferenceConstraintError{row: false, idx: idx, min: min, max: max}
 }
 
-func checkPreferenceConstraints(hPref, wPref preferenceGroup) error {
+func checkPreferenceConstraints(hPref, wPref PreferenceGroup) error {
 	for row, p := range hPref {
-		if p.min > p.max {
-			return makeRowViolation(row, p.min, p.max)
+		if p.Min > p.Max {
+			return makeRowViolation(row, p.Min, p.Max)
 		}
 	}
 
 	for col, p := range wPref {
-		if p.min > p.max {
-			return makeColViolation(col, p.min, p.max)
+		if p.Min > p.Max {
+			return makeColViolation(col, p.Min, p.Max)
 		}
 	}
 
@@ -370,14 +384,23 @@ func expandSpans(layouts Grid) Grid {
 	longestCol := 0
 	for _, row := range ret {
 		longestCol = max(longestCol, len(row))
+		curRow := 0
+		for _, l := range row {
+			if l.SpanWidth > 0 {
+				curRow += l.SpanWidth
+			} else {
+				curRow++
+			}
+		}
 	}
 
 	// spanx and create rows
 	for colIdx := 0; colIdx < longestCol; colIdx++ {
-		for rowIdx := 0; rowIdx < len(ret); rowIdx++ {
-			// skip if this was an empty cell
+		var rowIdx int
+		for rowIdx = 0; rowIdx < len(ret); rowIdx++ {
+			// pad empty cells
 			if len(ret[rowIdx]) < (colIdx + 1) {
-				continue
+				ret[rowIdx] = append(ret[rowIdx], layout{})
 			}
 
 			// vertical span duplicate handling.
@@ -397,11 +420,11 @@ func expandSpans(layouts Grid) Grid {
 					for i := 1; i < spanHeight; i++ {
 						// create next row if needed
 						if len(ret) <= (rowIdx + i) {
-							// pad next row so that we can insert the new cell.
+							// pad next row to colIdx so that we can append the new cell.
 							ret = append(ret, make([]layout, colIdx))
 						}
-						if len(ret[rowIdx+i]) == 0 {
-							// special case for first empty row.
+						if len(ret[rowIdx+i]) == colIdx {
+							// special case for new rows
 							ret[rowIdx+i] = append(ret[rowIdx+i], l)
 						} else {
 							ret[rowIdx+i] = append(ret[rowIdx+i][:colIdx+i], ret[rowIdx+i][colIdx+i-1:]...)
@@ -427,7 +450,7 @@ func expandSpans(layouts Grid) Grid {
 					ret[rowIdx] = append(ret[rowIdx][:colIdx+i], ret[rowIdx][colIdx+i-1:]...)
 					ret[rowIdx][colIdx+i] = l
 				}
-				// grow the longest column if necessary.
+				// Grow the longest column if necessary.
 				longestCol = max(len(ret[rowIdx]), longestCol)
 			}
 		}
@@ -457,7 +480,7 @@ func mergeDocks(g Grid, docks []layout) Grid {
 	for _, d := range docks {
 		switch d.Cardinal {
 		case NORTH:
-			// Add it to the first row, spanning the entire width.
+			// Cell it to the first row, spanning the entire width.
 			north := layout{
 				id: d.id,
 				Cell: Cell{
@@ -475,7 +498,7 @@ func mergeDocks(g Grid, docks []layout) Grid {
 			ret = append([][]layout{northRow}, ret...)
 			gridHeight++
 		case SOUTH:
-			// Add it to the final row, spanning the entire width.
+			// Cell it to the final row, spanning the entire width.
 			south := layout{
 				id: d.id,
 				Cell: Cell{
@@ -493,7 +516,7 @@ func mergeDocks(g Grid, docks []layout) Grid {
 			ret = append(ret, southRow)
 			gridHeight++
 		case EAST:
-			// Add it to the end of each row to span the entire height.
+			// Cell it to the end of each row to span the entire height.
 			east := layout{
 				id: d.id,
 				Cell: Cell{
@@ -509,7 +532,7 @@ func mergeDocks(g Grid, docks []layout) Grid {
 			}
 			gridWidth++
 		case WEST:
-			// Add it to the front of each row to span the entire height.
+			// Cell it to the front of each row to span the entire height.
 			west := layout{
 				id: d.id,
 				Cell: Cell{
@@ -532,54 +555,56 @@ func mergeDocks(g Grid, docks []layout) Grid {
 }
 
 // distillPreferences attempts to normalize the different preferences for cells
-// across each row and column. This is done to simplify the resizing algorithm.
+// across each row and column.
 //
-// For example, the minimum width for a column would be the minimum across all
-// layouts in the first column.
-func distillPreferences(g Grid) (hPref, wPref preferenceGroup) {
+// For example, the minimum width for a column would be the largest minimum
+// preference across all cells in the first column.
+//
+// This function is only used if row and column constraints are not defined.
+func distillPreferences(g Grid) (hPref, wPref PreferenceGroup) {
 	if len(g) == 0 {
 		return
 	}
 
 	gridHeight := len(g)
 	gridWidth := len(g[0])
-	hPref = make(preferenceGroup, gridHeight)
-	wPref = make(preferenceGroup, gridWidth)
+	hPref = make(PreferenceGroup, gridHeight)
+	wPref = make(PreferenceGroup, gridWidth)
 	for rowIdx := 0; rowIdx < gridHeight; rowIdx++ {
 		for colIdx := 0; colIdx < gridWidth; colIdx++ {
 			l := g[rowIdx][colIdx]
 
 			// collect height preferences
 			if l.MinHeight != 0 {
-				hPref[rowIdx].min = max(l.MinHeight, hPref[rowIdx].min)
+				hPref[rowIdx].Min = max(l.MinHeight, hPref[rowIdx].Min)
 			}
 			if l.MaxHeight != 0 {
-				if hPref[rowIdx].max == 0 {
-					hPref[rowIdx].max = l.MaxHeight
+				if hPref[rowIdx].Max == 0 {
+					hPref[rowIdx].Max = l.MaxHeight
 				} else {
-					hPref[rowIdx].max = min(l.MaxHeight, hPref[rowIdx].max)
+					hPref[rowIdx].Max = min(l.MaxHeight, hPref[rowIdx].Max)
 				}
 			}
 			if l.PreferredHeight != 0 {
-				hPref[rowIdx].preferred = append(hPref[rowIdx].preferred, l.PreferredHeight)
+				hPref[rowIdx].Preferred = max(hPref[rowIdx].Preferred, l.PreferredHeight)
 			}
-			hPref[rowIdx].grow = hPref[rowIdx].grow || l.GrowHeight
+			hPref[rowIdx].Grow = hPref[rowIdx].Grow || l.GrowHeight
 
 			// collect width preferences
 			if l.MinWidth != 0 {
-				wPref[colIdx].min = max(l.MinWidth, wPref[colIdx].min)
+				wPref[colIdx].Min = max(l.MinWidth, wPref[colIdx].Min)
 			}
 			if l.MaxWidth != 0 {
-				if wPref[colIdx].max == 0 {
-					wPref[colIdx].max = l.MaxWidth
+				if wPref[colIdx].Max == 0 {
+					wPref[colIdx].Max = l.MaxWidth
 				} else {
-					wPref[colIdx].max = min(l.MaxWidth, wPref[colIdx].max)
+					wPref[colIdx].Max = min(l.MaxWidth, wPref[colIdx].Max)
 				}
 			}
 			if l.PreferredWidth != 0 {
-				wPref[colIdx].preferred = append(wPref[colIdx].preferred, l.PreferredWidth)
+				wPref[colIdx].Preferred = max(wPref[colIdx].Preferred, l.PreferredWidth)
 			}
-			wPref[colIdx].grow = wPref[colIdx].grow || l.GrowWidth
+			wPref[colIdx].Grow = wPref[colIdx].Grow || l.GrowWidth
 		}
 	}
 	return
@@ -590,13 +615,24 @@ func (bl *bubbleLayout) Validate() error {
 		bl.resizeCache = expandSpans(bl.layouts)
 		bl.resizeCache = mergeDocks(bl.resizeCache, bl.docks)
 
-		bl.hPref, bl.wPref = distillPreferences(bl.resizeCache)
+		hPref, wPref := distillPreferences(bl.resizeCache)
+
+		if len(bl.hPref) == 0 {
+			bl.hPref = hPref
+		}
+
+		if len(bl.wPref) == 0 {
+			bl.wPref = wPref
+		}
+
 		return checkPreferenceConstraints(bl.hPref, bl.wPref)
 	}
 	return nil
 }
 
 // Resize recalculates the layout based on the current terminal size.
+// This function will panic if there is a validation error. If you would like to
+// handle errors, use Validate() before calling Resize().
 func (bl *bubbleLayout) Resize(width, height int) BubbleLayoutMsg {
 	if err := bl.Validate(); err != nil {
 		panic(err)
