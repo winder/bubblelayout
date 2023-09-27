@@ -1,4 +1,4 @@
-package layout
+package bubblelayout
 
 import (
 	"fmt"
@@ -31,12 +31,6 @@ const (
 	EAST
 	WEST
 )
-
-type dock struct {
-	id                  ID
-	cardinal            Cardinal
-	min, preferred, max int
-}
 
 type preferenceGroup []sizePreference
 
@@ -142,7 +136,7 @@ type sizePreference struct {
 	grow        bool
 }
 
-type Grid [][]Layout
+type Grid [][]layout
 
 func (g Grid) makeMessage(wDims, hDims []int) BubbleLayoutMsg {
 	msg := BubbleLayoutMsg{
@@ -178,10 +172,19 @@ func (g Grid) makeMessage(wDims, hDims []int) BubbleLayoutMsg {
 //   print function?
 //   compare function?
 
-// Layout defines the size and position that should be allocated for a view.
-type Layout struct {
+// layout holds the Cell or Dock information in addition to the ID.
+type layout struct {
 	id ID
 
+	// wrap indicates that the grid should wrap to the next row after this Layout.
+	wrap bool
+
+	Cell
+	Dock
+}
+
+// Cell defines the size and position that should be allocated for a view.
+type Cell struct {
 	// SpanWidth defines the number of columns that the view should span. Defaults to 1.
 	SpanWidth int
 	// SpanHeight defines the number of rows that the view should span. Defaults to 1.
@@ -212,25 +215,40 @@ type Layout struct {
 	hDuplicate bool
 }
 
+// Dock defines a component that should span an entire side of the layout.
+type Dock struct {
+	// Cardinal indicates which side of the layout the view should be docked to.
+	Cardinal Cardinal
+
+	// Min overrides the minimum width or height that should be allocated for the view.
+	Min int
+
+	// Preferred overrides the preferred width or height that should be allocated for the view.
+	Preferred int
+
+	// Max overrides the maximum width or height that should be allocated for the view.
+	Max int
+}
+
 type BubbleLayout interface {
 	AddStr(string) ID
-	Add(Layout) ID
+	Add(Cell) ID
+	Dock(Dock) ID
 	Wrap()
-	Dock(Cardinal, int, int, int) ID
 	Resize(width, height int) BubbleLayoutMsg
 	Validate() error
 }
 
 func New() BubbleLayout {
 	return &bubbleLayout{
-		layouts: [][]Layout{{}},
+		layouts: [][]layout{{}},
 	}
 }
 
 type bubbleLayout struct {
 	idCounter ID
 	layouts   Grid
-	docks     []dock
+	docks     []layout
 
 	// resizeCache is the layouts after being merged with the docks.
 	resizeCache Grid
@@ -245,11 +263,19 @@ func (bl *bubbleLayout) AddStr(str string) ID {
 }
 
 // Add a tea.Model to the layout. The model will be placed in the next available cell.
-func (bl *bubbleLayout) Add(l Layout) ID {
+func (bl *bubbleLayout) Add(c Cell) ID {
 	bl.idCounter++
+	l := layout{
+		id:   bl.idCounter,
+		Cell: c,
+	}
 	idx := len(bl.layouts) - 1
 	l.id = bl.idCounter
 	bl.layouts[idx] = append(bl.layouts[idx], l)
+
+	if l.wrap {
+		bl.layouts = append(bl.layouts, []layout{})
+	}
 
 	// TODO: Debug mode which panics here as soon as a constraint violation is detected.
 	return bl.idCounter
@@ -257,15 +283,15 @@ func (bl *bubbleLayout) Add(l Layout) ID {
 
 // Wrap inserts a new row into the layout, subsequent calls to Add will place models in the new row.
 func (bl *bubbleLayout) Wrap() {
-	bl.layouts = append(bl.layouts, []Layout{})
+	bl.layouts = append(bl.layouts, []layout{})
 }
 
 // Dock places a model on the edge of the layout, spanning the entire width or height.
 // For NORTH and SOUTH components, the width is fixed and the height is defined by min, preferred and max.
 // For EAST and WEST components, the height is fixed and the width is defined by min, preferred and max.
-func (bl *bubbleLayout) Dock(c Cardinal, min, preferred, max int) ID {
+func (bl *bubbleLayout) Dock(dock Dock) ID {
 	bl.idCounter++
-	bl.docks = append(bl.docks, dock{id: bl.idCounter, cardinal: c, min: min, preferred: preferred, max: max})
+	bl.docks = append(bl.docks, layout{id: bl.idCounter, Dock: dock})
 	return bl.idCounter
 }
 
@@ -337,7 +363,7 @@ func checkPreferenceConstraints(hPref, wPref preferenceGroup) error {
 func expandSpans(layouts Grid) Grid {
 	ret := make(Grid, len(layouts))
 	for i := 0; i < len(layouts); i++ {
-		ret[i] = make([]Layout, 0, len(layouts[i]))
+		ret[i] = make([]layout, 0, len(layouts[i]))
 		ret[i] = append(ret[i], layouts[i]...)
 	}
 
@@ -372,7 +398,7 @@ func expandSpans(layouts Grid) Grid {
 						// create next row if needed
 						if len(ret) <= (rowIdx + i) {
 							// pad next row so that we can insert the new cell.
-							ret = append(ret, make([]Layout, colIdx))
+							ret = append(ret, make([]layout, colIdx))
 						}
 						if len(ret[rowIdx+i]) == 0 {
 							// special case for first empty row.
@@ -412,7 +438,7 @@ func expandSpans(layouts Grid) Grid {
 
 // mergeDocks takes a layout and merges the docked layouts. Returns the new layout and width/height deltas.
 // This function is called after expandSpans, so it must expand the spans as part of adding the dock.
-func mergeDocks(g Grid, docks []dock) Grid {
+func mergeDocks(g Grid, docks []layout) Grid {
 	if len(g) == 0 {
 		return nil
 	}
@@ -420,7 +446,7 @@ func mergeDocks(g Grid, docks []dock) Grid {
 	// Make a copy
 	ret := make(Grid, len(g))
 	for i := 0; i < len(g); i++ {
-		ret[i] = make([]Layout, 0, len(g[i]))
+		ret[i] = make([]layout, 0, len(g[i]))
 		ret[i] = append(ret[i], g[i]...)
 	}
 
@@ -429,33 +455,37 @@ func mergeDocks(g Grid, docks []dock) Grid {
 
 	// merge docked layouts into the resize cache.
 	for _, d := range docks {
-		switch d.cardinal {
+		switch d.Cardinal {
 		case NORTH:
 			// Add it to the first row, spanning the entire width.
-			north := Layout{
-				id:              d.id,
-				SpanWidth:       gridWidth,
-				MinHeight:       d.min,
-				PreferredHeight: d.preferred,
-				MaxHeight:       d.max,
+			north := layout{
+				id: d.id,
+				Cell: Cell{
+					SpanWidth:       gridWidth,
+					MinHeight:       d.Min,
+					PreferredHeight: d.Preferred,
+					MaxHeight:       d.Max,
+				},
 			}
-			northRow := make([]Layout, 0, gridWidth)
+			northRow := make([]layout, 0, gridWidth)
 			for i := 0; i < gridWidth; i++ {
 				northRow = append(northRow, north)
 				north.wDuplicate = true // the second and on are duplicate.
 			}
-			ret = append([][]Layout{northRow}, ret...)
+			ret = append([][]layout{northRow}, ret...)
 			gridHeight++
 		case SOUTH:
 			// Add it to the final row, spanning the entire width.
-			south := Layout{
-				id:              d.id,
-				SpanWidth:       gridWidth,
-				MinHeight:       d.min,
-				PreferredHeight: d.preferred,
-				MaxHeight:       d.max,
+			south := layout{
+				id: d.id,
+				Cell: Cell{
+					SpanWidth:       gridWidth,
+					MinHeight:       d.Min,
+					PreferredHeight: d.Preferred,
+					MaxHeight:       d.Max,
+				},
 			}
-			southRow := make([]Layout, 0, gridWidth)
+			southRow := make([]layout, 0, gridWidth)
 			for i := 0; i < gridWidth; i++ {
 				southRow = append(southRow, south)
 				south.wDuplicate = true // the second and on are duplicate.
@@ -464,12 +494,14 @@ func mergeDocks(g Grid, docks []dock) Grid {
 			gridHeight++
 		case EAST:
 			// Add it to the end of each row to span the entire height.
-			east := Layout{
-				id:             d.id,
-				SpanHeight:     gridHeight,
-				MinWidth:       d.min,
-				PreferredWidth: d.preferred,
-				MaxWidth:       d.max,
+			east := layout{
+				id: d.id,
+				Cell: Cell{
+					SpanHeight:     gridHeight,
+					MinWidth:       d.Min,
+					PreferredWidth: d.Preferred,
+					MaxWidth:       d.Max,
+				},
 			}
 			for i := 0; i < gridHeight; i++ {
 				ret[i] = append(ret[i], east)
@@ -478,15 +510,17 @@ func mergeDocks(g Grid, docks []dock) Grid {
 			gridWidth++
 		case WEST:
 			// Add it to the front of each row to span the entire height.
-			west := Layout{
-				id:             d.id,
-				SpanHeight:     gridHeight,
-				MinWidth:       d.min,
-				PreferredWidth: d.preferred,
-				MaxWidth:       d.max,
+			west := layout{
+				id: d.id,
+				Cell: Cell{
+					SpanHeight:     gridHeight,
+					MinWidth:       d.Min,
+					PreferredWidth: d.Preferred,
+					MaxWidth:       d.Max,
+				},
 			}
 			for i := 0; i < gridHeight; i++ {
-				ret[i] = append([]Layout{west}, ret[i]...)
+				ret[i] = append([]layout{west}, ret[i]...)
 				west.hDuplicate = true
 			}
 			gridWidth++

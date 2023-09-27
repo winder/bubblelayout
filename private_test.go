@@ -1,4 +1,4 @@
-package layout
+package bubblelayout
 
 import (
 	"testing"
@@ -198,61 +198,61 @@ func TestExpandSpans(t *testing.T) {
 	}{
 		{
 			name: "no expand",
-			input: [][]Layout{
+			input: [][]layout{
 				{{id: 1}, {id: 2}},
 				{{id: 3}, {id: 4}},
 			},
-			expected: [][]Layout{
+			expected: [][]layout{
 				{{id: 1}, {id: 2}},
 				{{id: 3}, {id: 4}},
 			},
 		}, {
 			name: "horizontal span",
-			input: [][]Layout{
-				{{id: 1, SpanWidth: 2}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2}}},
 				{{id: 2}, {id: 3}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanWidth: 2}, {id: 1, SpanWidth: 2, wDuplicate: true}},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2}}, {id: 1, Cell: Cell{SpanWidth: 2, wDuplicate: true}}},
 				{{id: 2}, {id: 3}},
 			},
 		}, {
 			name: "horizontal span and expand",
-			input: [][]Layout{
-				{{id: 1}, {id: 2, SpanWidth: 3}},
+			input: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 3}}},
 				{{id: 3}, {id: 4}},
 			},
-			expected: [][]Layout{
-				{{id: 1}, {id: 2, SpanWidth: 3}, {id: 2, SpanWidth: 3, wDuplicate: true}, {id: 2, SpanWidth: 3, wDuplicate: true}},
+			expected: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 3}}, {id: 2, Cell: Cell{SpanWidth: 3, wDuplicate: true}}, {id: 2, Cell: Cell{SpanWidth: 3, wDuplicate: true}}},
 				{{id: 3}, {id: 4}},
 			},
 		}, {
 			name: "vertical span",
-			input: [][]Layout{
-				{{id: 1, SpanHeight: 2}, {id: 2}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{SpanHeight: 2}}, {id: 2}},
 				{{id: 3}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanHeight: 2}, {id: 2}},
-				{{id: 1, SpanHeight: 2, hDuplicate: true}, {id: 3}},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanHeight: 2}}, {id: 2}},
+				{{id: 1, Cell: Cell{SpanHeight: 2, hDuplicate: true}}, {id: 3}},
 			},
 		}, {
 			name: "vertical span and expand",
-			input: [][]Layout{
-				{{id: 1, SpanHeight: 2}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{SpanHeight: 2}}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanHeight: 2}},
-				{{id: 1, SpanHeight: 2, hDuplicate: true}},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanHeight: 2}}},
+				{{id: 1, Cell: Cell{SpanHeight: 2, hDuplicate: true}}},
 			},
 		}, {
 			name: "vertical and horizontal span and overflow",
-			input: [][]Layout{
-				{{id: 1, SpanWidth: 2, SpanHeight: 2}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanWidth: 2, SpanHeight: 2}, {id: 1, SpanWidth: 2, SpanHeight: 2, wDuplicate: true}},
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, hDuplicate: true}, {id: 1, SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, wDuplicate: true}}},
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true}}, {id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}}},
 			},
 		}, {
 			// input:
@@ -272,39 +272,39 @@ func TestExpandSpans(t *testing.T) {
 			// |   -   |   6   |       7       |
 			// ---------------------------------
 			name: "complex",
-			input: [][]Layout{
-				{{id: 1}, {id: 2, SpanWidth: 2, SpanHeight: 2}, {id: 3}},
-				{{id: 4, SpanHeight: 2}, {id: 5}},
-				{{id: 6}, {id: 7, SpanWidth: 2}},
+			input: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 3}},
+				{{id: 4, Cell: Cell{SpanHeight: 2}}, {id: 5}},
+				{{id: 6}, {id: 7, Cell: Cell{SpanWidth: 2}}},
 			},
-			expected: [][]Layout{
-				{{id: 1}, {id: 2, SpanWidth: 2, SpanHeight: 2}, {id: 2, SpanWidth: 2, SpanHeight: 2, wDuplicate: true}, {id: 3}},
-				{{id: 4, SpanHeight: 2}, {id: 2, SpanWidth: 2, SpanHeight: 2, hDuplicate: true}, {id: 2, SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}, {id: 5}},
-				{{id: 4, SpanHeight: 2, hDuplicate: true}, {id: 6}, {id: 7, SpanWidth: 2}, {id: 7, SpanWidth: 2, wDuplicate: true}},
+			expected: [][]layout{
+				{{id: 1}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, wDuplicate: true}}, {id: 3}},
+				{{id: 4, Cell: Cell{SpanHeight: 2}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true}}, {id: 2, Cell: Cell{SpanWidth: 2, SpanHeight: 2, hDuplicate: true, wDuplicate: true}}, {id: 5}},
+				{{id: 4, Cell: Cell{SpanHeight: 2, hDuplicate: true}}, {id: 6}, {id: 7, Cell: Cell{SpanWidth: 2}}, {id: 7, Cell: Cell{SpanWidth: 2, wDuplicate: true}}},
 			},
 		}, {
 			name: "prefs even split",
-			input: [][]Layout{
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25},
-					{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}},
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true},
-					{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true, wDuplicate: true},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
+					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}}},
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true}},
+					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true, wDuplicate: true}},
 				},
 			},
 		}, {
 			// these are all 1 larger than "perfs even split", the odd number is discarded.
 			name: "prefs odd split rounding error",
-			input: [][]Layout{
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 11, MaxHeight: 101, PreferredHeight: 51, MinWidth: 11, MaxWidth: 101, PreferredWidth: 51}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 11, MaxHeight: 101, PreferredHeight: 51, MinWidth: 11, MaxWidth: 101, PreferredWidth: 51}}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25},
-					{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}},
-				{{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true},
-					{id: 1, SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true, wDuplicate: true},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
+					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}}},
+				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true}},
+					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, hDuplicate: true, wDuplicate: true}},
 				},
 			},
 		},
@@ -326,7 +326,7 @@ func TestMergeDocks_Empty(t *testing.T) {
 
 func TestMergeDocks_InvalidCardinal(t *testing.T) {
 	panicFunc := func() {
-		mergeDocks([][]Layout{{{id: 0}}}, []dock{{id: 1, cardinal: 99}})
+		mergeDocks([][]layout{{{id: 0}}}, []layout{{id: 1, Dock: Dock{Cardinal: 99}}})
 	}
 	assert.PanicsWithError(t, "invalid cardinal", panicFunc)
 }
@@ -335,104 +335,104 @@ func TestMergeDocks(t *testing.T) {
 	testcases := []struct {
 		name     string
 		start    Grid
-		docks    []dock
+		docks    []layout
 		expected Grid
 	}{
 		{
 			name: "simple north",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}},
 			},
-			docks: []dock{
-				{id: 1, cardinal: NORTH, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 1, Dock: Dock{Cardinal: NORTH, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanWidth: 1, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10}},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanWidth: 1, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10}}},
 				{{id: 0}},
 			},
 		}, {
 			name: "simple south",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}},
 			},
-			docks: []dock{
-				{id: 1, cardinal: SOUTH, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 1, Dock: Dock{Cardinal: SOUTH, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
+			expected: [][]layout{
 				{{id: 0}},
-				{{id: 1, SpanWidth: 1, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10}},
+				{{id: 1, Cell: Cell{SpanWidth: 1, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10}}},
 			},
 		}, {
 			name: "simple west",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}},
 			},
-			docks: []dock{
-				{id: 1, cardinal: WEST, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 1, Dock: Dock{Cardinal: WEST, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
-				{{id: 1, SpanHeight: 1, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10}, {id: 0}},
+			expected: [][]layout{
+				{{id: 1, Cell: Cell{SpanHeight: 1, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10}}, {id: 0}},
 			},
 		}, {
 			name: "simple east",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}},
 			},
-			docks: []dock{
-				{id: 1, cardinal: EAST, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 1, Dock: Dock{Cardinal: EAST, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
-				{{id: 0}, {id: 1, SpanHeight: 1, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10}},
+			expected: [][]layout{
+				{{id: 0}, {id: 1, Cell: Cell{SpanHeight: 1, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10}}},
 			},
 		}, {
 			name: "double north",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}, {id: 1}},
 			},
-			docks: []dock{
-				{id: 2, cardinal: NORTH, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 2, Dock: Dock{Cardinal: NORTH, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
-				{{id: 2, SpanWidth: 2, MinHeight: 5, PreferredHeight: 5, MaxHeight: 5}, {id: 2, SpanWidth: 2, MinHeight: 5, PreferredHeight: 5, MaxHeight: 5, wDuplicate: true}},
+			expected: [][]layout{
+				{{id: 2, Cell: Cell{SpanWidth: 2, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10}}, {id: 2, Cell: Cell{SpanWidth: 2, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10, wDuplicate: true}}},
 				{{id: 0}, {id: 1}},
 			},
 		}, {
 			name: "double south",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}, {id: 1}},
 			},
-			docks: []dock{
-				{id: 2, cardinal: SOUTH, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 2, Dock: Dock{Cardinal: SOUTH, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
+			expected: [][]layout{
 				{{id: 0}, {id: 1}},
-				{{id: 2, SpanWidth: 2, MinHeight: 5, PreferredHeight: 5, MaxHeight: 5}, {id: 2, SpanWidth: 2, MinHeight: 5, PreferredHeight: 5, MaxHeight: 5, wDuplicate: true}},
+				{{id: 2, Cell: Cell{SpanWidth: 2, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10}}, {id: 2, Cell: Cell{SpanWidth: 2, MinHeight: 10, PreferredHeight: 10, MaxHeight: 10, wDuplicate: true}}},
 			},
 		}, {
 			name: "double west",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}},
 				{{id: 1}},
 			},
-			docks: []dock{
-				{id: 2, cardinal: WEST, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 2, Dock: Dock{Cardinal: WEST, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
-				{{id: 2, SpanHeight: 2, MinWidth: 5, PreferredWidth: 5, MaxWidth: 5}, {id: 0}},
-				{{id: 2, SpanHeight: 2, MinWidth: 5, PreferredWidth: 5, MaxWidth: 5, hDuplicate: true}, {id: 1}},
+			expected: [][]layout{
+				{{id: 2, Cell: Cell{SpanHeight: 2, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10}}, {id: 0}},
+				{{id: 2, Cell: Cell{SpanHeight: 2, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10, hDuplicate: true}}, {id: 1}},
 			},
 		}, {
 			name: "double east",
-			start: [][]Layout{
+			start: [][]layout{
 				{{id: 0}},
 				{{id: 1}},
 			},
-			docks: []dock{
-				{id: 2, cardinal: EAST, min: 10, preferred: 10, max: 10},
+			docks: []layout{
+				{id: 2, Dock: Dock{Cardinal: EAST, Min: 10, Preferred: 10, Max: 10}},
 			},
-			expected: [][]Layout{
-				{{id: 0}, {id: 2, SpanHeight: 2, MinWidth: 5, PreferredWidth: 5, MaxWidth: 5}},
-				{{id: 1}, {id: 2, SpanHeight: 2, MinWidth: 5, PreferredWidth: 5, MaxWidth: 5, hDuplicate: true}},
+			expected: [][]layout{
+				{{id: 0}, {id: 2, Cell: Cell{SpanHeight: 2, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10}}},
+				{{id: 1}, {id: 2, Cell: Cell{SpanHeight: 2, MinWidth: 10, PreferredWidth: 10, MaxWidth: 10, hDuplicate: true}}},
 			},
 		},
 	}
@@ -456,25 +456,25 @@ func TestDistillPrefs(t *testing.T) {
 	}{
 		{
 			name: "1x1",
-			input: [][]Layout{
-				{{id: 1, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
 			hExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}},
 			wExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}},
 		}, {
 			name: "2x2 one defaults",
-			input: [][]Layout{
-				{{id: 1, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}, {id: 2}},
-				{{id: 3}, {id: 4, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}, {id: 2}},
+				{{id: 3}, {id: 4, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
 			hExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}, {min: 10, preferred: []int{50}, max: 100}},
 			wExpected: []sizePreference{{min: 10, preferred: []int{50}, max: 100}, {min: 10, preferred: []int{50}, max: 100}},
 		}, {
 			name: "1x3 max(min)) and min(max)",
-			input: [][]Layout{
+			input: [][]layout{
 				{
-					{id: 1, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25},
-					{id: 2, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50},
+					{id: 1, Cell: Cell{MinHeight: 5, MaxHeight: 50, PreferredHeight: 25}},
+					{id: 2, Cell: Cell{MinHeight: 10, MaxHeight: 100, PreferredHeight: 50}},
 					{id: 3},
 				},
 			},
@@ -482,9 +482,9 @@ func TestDistillPrefs(t *testing.T) {
 			wExpected: []sizePreference{{}, {}, {}},
 		}, {
 			name: "3x1 max(min)) and min(max)",
-			input: [][]Layout{
-				{{id: 1, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
-				{{id: 2, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}},
+			input: [][]layout{
+				{{id: 1, Cell: Cell{MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}}},
+				{{id: 2, Cell: Cell{MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 				{{id: 3}},
 			},
 			hExpected: []sizePreference{{}, {}, {}},
@@ -511,22 +511,22 @@ func TestDistillPrefs_Empty(t *testing.T) {
 
 func TestDock(t *testing.T) {
 	l := New()
-	l.Dock(NORTH, 1, 2, 3)
+	l.Dock(Dock{NORTH, 1, 2, 3})
 	bl := l.(*bubbleLayout)
-	require.Equal(t, []dock{{cardinal: NORTH, id: 1, min: 1, preferred: 2, max: 3}}, bl.docks)
+	require.Equal(t, []layout{{id: 1, Dock: Dock{Cardinal: NORTH, Min: 1, Preferred: 2, Max: 3}}}, bl.docks)
 }
 
 func TestValidate_FailureHeight(t *testing.T) {
 	l := New()
-	l.Add(Layout{MinHeight: 100})
-	l.Add(Layout{MaxHeight: 10})
+	l.Add(Cell{MinHeight: 100})
+	l.Add(Cell{MaxHeight: 10})
 	require.ErrorContains(t, l.Validate(), makeRowViolation(0, 100, 10).Error())
 }
 
 func TestValidate_FailureWidth(t *testing.T) {
 	l := New()
-	l.Add(Layout{MinWidth: 100})
+	l.Add(Cell{MinWidth: 100})
 	l.Wrap()
-	l.Add(Layout{MaxWidth: 10})
+	l.Add(Cell{MaxWidth: 10})
 	require.ErrorContains(t, l.Validate(), makeColViolation(0, 100, 10).Error())
 }

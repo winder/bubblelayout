@@ -3,7 +3,7 @@ package util
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/winder/layout"
+	bl "github.com/winder/bubblelayout"
 )
 
 type LayoutModel interface {
@@ -11,11 +11,11 @@ type LayoutModel interface {
 
 type layoutModel struct {
 	models []tea.Model
-	layout layout.BubbleLayout
+	layout bl.BubbleLayout
 	view   func([]tea.Model) string
 }
 
-func NewLayoutModel(models []tea.Model, layout layout.BubbleLayout, view func([]tea.Model) string) tea.Model {
+func NewLayoutModel(models []tea.Model, layout bl.BubbleLayout, view func([]tea.Model) string) tea.Model {
 	return layoutModel{
 		models: models,
 		layout: layout,

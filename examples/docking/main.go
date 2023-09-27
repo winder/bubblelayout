@@ -5,7 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"examples/util"
-	"github.com/winder/layout"
+	bl "github.com/winder/bubblelayout"
 )
 
 func New() tea.Model {
@@ -21,17 +21,17 @@ func New() tea.Model {
 	// |   |     SOUTH     |   |
 	// -------------------------
 
-	bl := layout.New()
+	layout := bl.New()
 	var models []tea.Model
-	models = append(models, util.NewSimpleModel("9", bl.Add(layout.Layout{})))
-	models = append(models, util.NewSimpleModel("10", bl.Add(layout.Layout{})))
-	bl.Wrap()
-	models = append(models, util.NewSimpleModel("11", bl.Add(layout.Layout{SpanWidth: 2, SpanHeight: 2})))
+	models = append(models, util.NewSimpleModel("9", layout.Add(bl.Cell{})))
+	models = append(models, util.NewSimpleModel("10", layout.Add(bl.Cell{})))
+	layout.Wrap()
+	models = append(models, util.NewSimpleModel("11", layout.Add(bl.Cell{SpanWidth: 2, SpanHeight: 2})))
 
-	models = append(models, util.NewSimpleModel("12", bl.Dock(layout.NORTH, 1, 1, 1)))
-	models = append(models, util.NewSimpleModel("13", bl.Dock(layout.SOUTH, 1, 1, 1)))
-	models = append(models, util.NewSimpleModel("14", bl.Dock(layout.WEST, 1, 10, 10)))
-	models = append(models, util.NewSimpleModel("15", bl.Dock(layout.EAST, 1, 10, 10)))
+	models = append(models, util.NewSimpleModel("12", layout.Dock(bl.Dock{Cardinal: bl.NORTH, Min: 1, Preferred: 1, Max: 1})))
+	models = append(models, util.NewSimpleModel("13", layout.Dock(bl.Dock{Cardinal: bl.SOUTH, Min: 1, Preferred: 1, Max: 1})))
+	models = append(models, util.NewSimpleModel("14", layout.Dock(bl.Dock{Cardinal: bl.WEST, Min: 1, Preferred: 10, Max: 10})))
+	models = append(models, util.NewSimpleModel("15", layout.Dock(bl.Dock{Cardinal: bl.EAST, Min: 1, Preferred: 10, Max: 10})))
 
 	view := func(models []tea.Model) string {
 		// Note: docks should be joined in the order they are defined.
@@ -45,7 +45,7 @@ func New() tea.Model {
 			center,
 			models[6].View()) // east
 	}
-	return util.NewLayoutModel(models, bl, view)
+	return util.NewLayoutModel(models, layout, view)
 }
 
 func main() {
