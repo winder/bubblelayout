@@ -4,7 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	bl "github.com/winder/layout"
+	bl "github.com/winder/bubblelayout"
 )
 
 type layoutModel struct {
@@ -19,10 +19,11 @@ type layoutModel struct {
 
 func New() tea.Model {
 	layoutModel := layoutModel{
-		layout: bl.New(),
+		layout: bl.NewWithConstraints(bl.PreferenceGroup{{Max: 10}, {Grow: true}}, nil),
 	}
-	layoutModel.leftID = layoutModel.layout.Add(bl.Layout{MaxWidth: 10})
-	layoutModel.rightID = layoutModel.layout.Add(bl.Layout{})
+	layoutModel.leftID = layoutModel.layout.Add("")
+	layoutModel.rightID = layoutModel.layout.Add("")
+
 	return layoutModel
 }
 

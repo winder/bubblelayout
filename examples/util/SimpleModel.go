@@ -6,25 +6,25 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/winder/layout"
+	bl "github.com/winder/bubblelayout"
 )
 
 // simpleModel listens to BubbleLayoutMsg events and displays a colored box and its ID.
 type simpleModel struct {
-	id         layout.ID
+	id         bl.ID
 	background lipgloss.Color
 	w, h       int
 	message    string
 }
 
-func NewSimpleModel(bg lipgloss.Color, id layout.ID) tea.Model {
+func NewSimpleModel(bg lipgloss.Color, id bl.ID) tea.Model {
 	return simpleModel{
 		background: bg,
 		id:         id,
 	}
 }
 
-func NewSimpleModelWithMessage(bg lipgloss.Color, id layout.ID, message string) tea.Model {
+func NewSimpleModelWithMessage(bg lipgloss.Color, id bl.ID, message string) tea.Model {
 	return simpleModel{
 		background: bg,
 		id:         id,
@@ -37,7 +37,7 @@ func (m simpleModel) Init() tea.Cmd {
 }
 
 func (m simpleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(layout.BubbleLayoutMsg); ok {
+	if msg, ok := msg.(bl.BubbleLayoutMsg); ok {
 		size, err := msg.Size(m.id)
 		if err != nil {
 			panic(err)

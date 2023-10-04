@@ -1,4 +1,4 @@
-package layout_test
+package bubblelayout_test
 
 import (
 	"testing"
@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/winder/layout"
+	bl "github.com/winder/bubblelayout"
 )
 
 func TestUnknownComponent(t *testing.T) {
-	l := layout.New()
+	l := bl.New()
 	msg := l.Resize(10, 10)
 	_, err := msg.Size(1)
 	require.Error(t, err)
@@ -18,56 +18,56 @@ func TestUnknownComponent(t *testing.T) {
 }
 
 func TestOneComponent(t *testing.T) {
-	l := layout.New()
-	id1 := l.Add(layout.Layout{})
+	l := bl.New()
+	id1 := l.Cell(bl.Cell{})
 	msg := l.Resize(10, 10)
 
 	size, err := msg.Size(id1)
 	require.NoError(t, err)
-	require.Equal(t, layout.Size{Width: 10, Height: 10}, size)
+	require.Equal(t, bl.Size{Width: 10, Height: 10}, size)
 }
 
 func TestHorizontalComponents(t *testing.T) {
-	l := layout.New()
-	id1 := l.Add(layout.Layout{})
-	id2 := l.Add(layout.Layout{})
+	l := bl.New()
+	id1 := l.Cell(bl.Cell{})
+	id2 := l.Cell(bl.Cell{})
 	msg := l.Resize(10, 10)
 
 	{
 		size, err := msg.Size(id1)
 		require.NoError(t, err)
-		require.Equal(t, layout.Size{Width: 5, Height: 10}, size)
+		require.Equal(t, bl.Size{Width: 5, Height: 10}, size)
 	}
 
 	{
 		size, err := msg.Size(id2)
 		require.NoError(t, err)
-		require.Equal(t, layout.Size{Width: 5, Height: 10}, size)
+		require.Equal(t, bl.Size{Width: 5, Height: 10}, size)
 	}
 }
 
 func TestVerticalComponents(t *testing.T) {
-	l := layout.New()
-	id1 := l.Add(layout.Layout{})
+	l := bl.New()
+	id1 := l.Cell(bl.Cell{})
 	l.Wrap()
-	id2 := l.Add(layout.Layout{})
+	id2 := l.Cell(bl.Cell{})
 	msg := l.Resize(10, 10)
 
 	{
 		size, err := msg.Size(id1)
 		require.NoError(t, err)
-		require.Equal(t, layout.Size{Width: 10, Height: 5}, size)
+		require.Equal(t, bl.Size{Width: 10, Height: 5}, size)
 	}
 
 	{
 		size, err := msg.Size(id2)
 		require.NoError(t, err)
-		require.Equal(t, layout.Size{Width: 10, Height: 5}, size)
+		require.Equal(t, bl.Size{Width: 10, Height: 5}, size)
 	}
 }
 
 func TestComplex(t *testing.T) {
-	// input:
+	// inputLayout:
 	// ---------------------------------
 	// | 1        | 2 (2, 2) |    3    |
 	// ---------------------------------
@@ -83,72 +83,120 @@ func TestComplex(t *testing.T) {
 	// | - 4 - -------------------------
 	// |   -   |   6   |       7       |
 	// ---------------------------------
-	l := layout.New()
+	l := bl.New()
 
-	// layout
-	// ---------------------------------
-	// |   1   |       -       |   3   |
-	// --------- -  -  2  -  - |--------
-	// |   -   |       -       |   5   |
-	// | - 4 - -------------------------
-	// |   -   |   6   |       7       |
-	// ---------------------------------
-	var ids []layout.ID
-	ids = append(ids, l.Add(layout.Layout{}))
-	ids = append(ids, l.Add(layout.Layout{SpanWidth: 2, SpanHeight: 2}))
-	ids = append(ids, l.Add(layout.Layout{}))
+	var ids []bl.ID
+	ids = append(ids, l.Cell(bl.Cell{}))
+	ids = append(ids, l.Cell(bl.Cell{SpanWidth: 2, SpanHeight: 2}))
+	ids = append(ids, l.Cell(bl.Cell{}))
 	l.Wrap()
-	ids = append(ids, l.Add(layout.Layout{SpanHeight: 2}))
-	ids = append(ids, l.Add(layout.Layout{}))
+	ids = append(ids, l.Cell(bl.Cell{SpanHeight: 2}))
+	ids = append(ids, l.Cell(bl.Cell{}))
 	l.Wrap()
-	ids = append(ids, l.Add(layout.Layout{}))
-	ids = append(ids, l.Add(layout.Layout{SpanWidth: 2}))
+	ids = append(ids, l.Cell(bl.Cell{}))
+	ids = append(ids, l.Cell(bl.Cell{SpanWidth: 2}))
 
 	msg := l.Resize(100, 75)
 
 	{
-		for _, id := range []layout.ID{ids[0], ids[2], ids[4], ids[5]} {
+		for _, id := range []bl.ID{ids[0], ids[2], ids[4], ids[5]} {
 			size, err := msg.Size(id)
 			require.NoError(t, err)
-			assert.Equal(t, layout.Size{Width: 25, Height: 25}, size, "1x1 cell should be 25x25")
+			assert.Equal(t, bl.Size{Width: 25, Height: 25}, size, "1x1 cell should be 25x25")
 		}
 	}
 	{
 		size, err := msg.Size(ids[1])
 		require.NoError(t, err)
-		assert.Equal(t, layout.Size{Width: 50, Height: 50}, size, "2x2 cell should be 50x50")
+		assert.Equal(t, bl.Size{Width: 50, Height: 50}, size, "2x2 cell should be 50x50")
 	}
 	{
 		size, err := msg.Size(ids[3])
 		require.NoError(t, err)
-		assert.Equal(t, layout.Size{Width: 25, Height: 50}, size, "1x2 cell should be 25x50")
+		assert.Equal(t, bl.Size{Width: 25, Height: 50}, size, "1x2 cell should be 25x50")
 	}
 	{
 		size, err := msg.Size(ids[6])
 		require.NoError(t, err)
-		assert.Equal(t, layout.Size{Width: 50, Height: 25}, size, "2x1 cell should be 50x25")
+		assert.Equal(t, bl.Size{Width: 50, Height: 25}, size, "2x1 cell should be 50x25")
 	}
 }
 
 func TestValidateCache(t *testing.T) {
-	l := layout.New()
-	l.Add(layout.Layout{})
+	l := bl.New()
+	l.Cell(bl.Cell{})
 	require.NoError(t, l.Validate())
 	require.NoError(t, l.Validate())
 }
 
 func TestResize_Panic(t *testing.T) {
-	l := layout.New()
-	l.Add(layout.Layout{MinHeight: 100})
-	l.Add(layout.Layout{MaxHeight: 10})
+	l := bl.New()
+	l.Cell(bl.Cell{MinHeight: 100})
+	l.Cell(bl.Cell{MaxHeight: 10})
 	panicFunc := func() {
 		l.Resize(100, 100)
 	}
 	require.Panicsf(t, panicFunc, "constraint violation")
 }
 
-func TestAddStr(t *testing.T) {
-	l := layout.New()
-	panicFunc := func() { l.AddStr("hello") }
+func TestAdd_Panic(t *testing.T) {
+	l := bl.New()
+	panicFunc := func() { l.Add("invalid constraint options") }
 	require.Panics(t, panicFunc)
+}
+
+func TestMaybeAdd(t *testing.T) {
+	l := bl.New()
+	_, err := l.MaybeAdd("invalid constraint options")
+	require.ErrorContains(t, err, "invalid constraint")
+
+}
+
+func TestDockAPI(t *testing.T) {
+	l := bl.New()
+	id1 := l.Cell(bl.Cell{})
+	l.Wrap()
+	id2 := l.Cell(bl.Cell{SpanHeight: 2})
+	id3 := l.Dock(bl.Dock{Cardinal: bl.EAST})
+
+	msg := l.Resize(100, 75)
+	{
+		size, err := msg.Size(id1)
+		require.NoError(t, err)
+		assert.Equal(t, bl.Size{Width: 50, Height: 25}, size)
+	}
+	{
+		size, err := msg.Size(id2)
+		require.NoError(t, err)
+		assert.Equal(t, bl.Size{Width: 50, Height: 50}, size)
+	}
+	{
+		size, err := msg.Size(id3)
+		require.NoError(t, err)
+		assert.Equal(t, bl.Size{Width: 50, Height: 75}, size)
+	}
+}
+
+func TestDockAdd(t *testing.T) {
+	l := bl.New()
+	id1 := l.Add("wrap")
+	id2 := l.Add("spanh 2")
+	id3 := l.Add("dock east")
+
+	msg := l.Resize(100, 75)
+	{
+		size, err := msg.Size(id1)
+		require.NoError(t, err)
+		assert.Equal(t, bl.Size{Width: 50, Height: 25}, size)
+	}
+	{
+		size, err := msg.Size(id2)
+		require.NoError(t, err)
+		assert.Equal(t, bl.Size{Width: 50, Height: 50}, size)
+	}
+	{
+		size, err := msg.Size(id3)
+		require.NoError(t, err)
+		assert.Equal(t, bl.Size{Width: 50, Height: 75}, size)
+	}
 }

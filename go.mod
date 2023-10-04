@@ -1,4 +1,4 @@
-module github.com/winder/layout
+module github.com/winder/bubblelayout
 
 go 1.20
 
