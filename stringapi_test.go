@@ -100,7 +100,13 @@ func TestPartSize(t *testing.T) {
 			in:  "null:10:null",
 			out: BoundSize{Preferred: 10},
 		}, {
+			in:  "nil:10:nil",
+			out: BoundSize{Preferred: 10},
+		}, {
 			in:  "n:10:null",
+			out: BoundSize{Preferred: 10},
+		}, {
+			in:  "n:10:nil",
 			out: BoundSize{Preferred: 10},
 		}, {
 			in:  "10::",

@@ -200,3 +200,40 @@ func TestDockAdd(t *testing.T) {
 		assert.Equal(t, bl.Size{Width: 50, Height: 75}, size)
 	}
 }
+
+func TestResize(t *testing.T) {
+	const width = 80
+	const height = 40
+	testcases := []struct {
+		name string
+		in   func() bl.BubbleLayout
+		out  map[bl.ID]bl.Size
+	}{
+		{
+			name: "simple",
+			in: func() bl.BubbleLayout {
+				l := bl.New()
+				l.Add("width 10")
+				l.Add("grow")
+				return l
+			},
+			out: map[bl.ID]bl.Size{
+				1: {Width: 10, Height: height},
+				2: {Width: width - 10, Height: height},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			l := tc.in()
+			msg := l.Resize(width, height)
+			for id, size := range tc.out {
+				actual, err := msg.Size(id)
+				require.NoError(t, err)
+				assert.Equal(t, size, actual)
+			}
+		})
+	}
+}

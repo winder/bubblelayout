@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -18,11 +20,9 @@ type layoutModel struct {
 }
 
 func New() tea.Model {
-	layoutModel := layoutModel{
-		layout: bl.NewWithConstraints(bl.PreferenceGroup{{Max: 10}, {Grow: true}}, nil),
-	}
-	layoutModel.leftID = layoutModel.layout.Add("")
-	layoutModel.rightID = layoutModel.layout.Add("")
+	layoutModel := layoutModel{layout: bl.New()}
+	layoutModel.leftID = layoutModel.layout.Add("width 10")
+	layoutModel.rightID = layoutModel.layout.Add("grow")
 
 	return layoutModel
 }
@@ -69,6 +69,14 @@ func (m layoutModel) View() string {
 }
 
 func main() {
+	layoutModel := New().(layoutModel)
+	msg := layoutModel.layout.Resize(80, 40)
+	fmt.Println(msg.Size(layoutModel.leftID))
+	msg = layoutModel.layout.Resize(80, 40)
+	fmt.Println(msg.Size(layoutModel.leftID))
+	msg = layoutModel.layout.Resize(80, 40)
+	fmt.Println(msg.Size(layoutModel.leftID))
+
 	p := tea.NewProgram(New())
 	p.Run()
 }

@@ -87,7 +87,7 @@ func TestPreferenceGroup(t *testing.T) {
 		}, {
 			name: "one Grow to Max",
 			pg: PreferenceGroup{
-				{Max: 10, Grow: false},
+				{Min: 1, Preferred: 5, Max: 10, Grow: true},
 			},
 			allocated: 80,
 			expected:  []int{10},
@@ -123,6 +123,14 @@ func TestPreferenceGroup(t *testing.T) {
 			allocated: 80,
 			expected:  []int{10, 70},
 		}, {
+			name: "two growers",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 40, Grow: true},
+				{Grow: true},
+			},
+			allocated: 80,
+			expected:  []int{40, 40},
+		}, {
 			name: "three uneven to Max",
 			pg: PreferenceGroup{
 				{Max: 10},
@@ -150,6 +158,22 @@ func TestPreferenceGroup(t *testing.T) {
 			allocated: 80,
 			expected:  []int{10, 40, 30},
 		}, {
+			name: "two growers and uneven max",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 20, Grow: true},
+				{Preferred: 10, Max: 80, Grow: true},
+			},
+			allocated: 60,
+			expected:  []int{20, 40},
+		}, {
+			name: "two growers and uneven max thats reached",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 15, Grow: true},
+				{Preferred: 10, Max: 15, Grow: true},
+			},
+			allocated: 60,
+			expected:  []int{15, 15},
+		}, {
 			name: "just enough for Min",
 			pg: PreferenceGroup{
 				{Min: 20, Preferred: 30, Max: 40},
@@ -160,6 +184,16 @@ func TestPreferenceGroup(t *testing.T) {
 			allocated: 80,
 			expected:  []int{20, 20, 20, 20},
 		}, {
+			name: "just enough for Min 2",
+			pg: PreferenceGroup{
+				{Min: 10, Preferred: 30, Max: 40},
+				{Min: 20, Preferred: 30, Max: 40},
+				{Min: 30, Preferred: 60, Max: 100},
+				{Min: 40, Preferred: 80, Max: 100},
+			},
+			allocated: 100,
+			expected:  []int{10, 20, 30, 40},
+		}, {
 			name: "go below Min when over allocated",
 			pg: PreferenceGroup{
 				{Min: 25, Preferred: 30, Max: 40},
@@ -168,15 +202,48 @@ func TestPreferenceGroup(t *testing.T) {
 				{Min: 25, Preferred: 30, Max: 40},
 			},
 			allocated: 80,
-			expected:  []int{20, 20, 20, 20},
+			expected:  []int{25, 25, 25, 5},
 		}, {
-			name: "remainder",
+			name: "do not go over max",
 			pg: PreferenceGroup{
 				{Max: 30, Grow: true},
 				{Max: 30, Grow: true},
 			},
 			allocated: 61,
-			expected:  []int{30, 31},
+			expected:  []int{30, 30},
+		}, {
+			name: "remainder",
+			pg: PreferenceGroup{
+				{},
+				{},
+			},
+			allocated: 81,
+			expected:  []int{41, 40},
+		}, {
+			name: "even split above preferred",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 100, Grow: true},
+				{Preferred: 50, Max: 70, Grow: true},
+			},
+			allocated: 80,
+			expected:  []int{20, 60},
+		}, {
+			name: "No max no grow",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 15},
+				{Preferred: 10},
+				{},
+			},
+			allocated: 60,
+			expected:  []int{10, 10, 40},
+		}, {
+			name: "growToMax",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 100, Grow: true},
+				{Preferred: 50, Max: 55, Grow: true},
+			},
+			allocated: 80,
+			expected:  []int{25, 55},
 		},
 	}
 
@@ -378,9 +445,10 @@ func TestExpandSpans(t *testing.T) {
 			inputLayout: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 10, MaxHeight: 100, PreferredHeight: 50, MinWidth: 10, MaxWidth: 100, PreferredWidth: 50}}},
 			},
-			// this isn't supported by the string format.
-			// to do something similar you'd use NewWithConstraints
-			inputString: nil,
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("span 2 2, width 10:50:100, height 10:50:100")
+				return bl.layouts
+			},
 			expected: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
 					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}}},
@@ -394,9 +462,10 @@ func TestExpandSpans(t *testing.T) {
 			inputLayout: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 11, MaxHeight: 101, PreferredHeight: 51, MinWidth: 11, MaxWidth: 101, PreferredWidth: 51}}},
 			},
-			// this isn't supported by the string format.
-			// to do something similar you'd use NewWithConstraints
-			inputString: nil,
+			inputString: func(bl *bubbleLayout) Grid {
+				bl.Add("span 2 2, width 11:51:101, height 11:51:101")
+				return bl.layouts
+			},
 			expected: [][]layout{
 				{{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25}},
 					{id: 1, Cell: Cell{SpanWidth: 2, SpanHeight: 2, MinHeight: 5, MaxHeight: 50, PreferredHeight: 25, MinWidth: 5, MaxWidth: 50, PreferredWidth: 25, wDuplicate: true}}},
@@ -639,12 +708,43 @@ func TestValidate_FailureWidth(t *testing.T) {
 	require.ErrorContains(t, l.Validate(), makeColViolation(0, 100, 10).Error())
 }
 
+func TestTooManayConstraints(t *testing.T) {
+	// 0x1 layout with 1x1 constraint
+	h := PreferenceGroup{{}}
+	w := PreferenceGroup{{}}
+	l := NewWithConstraints(w, h)
+	require.ErrorContains(t, l.Validate(), "width preferences do not match the cell height")
+
+	// 0x1 layout with 1x2 constraint
+	h = append(h, BoundSize{})
+	l = NewWithConstraints(w, h)
+	require.ErrorContains(t, l.Validate(), "height preferences do not match the cell height")
+}
+
 func TestProvideConstraints(t *testing.T) {
 	col := PreferenceGroup{{Min: 1, Preferred: 2, Max: 3}}
 	row := PreferenceGroup{{Min: 4, Preferred: 5, Max: 6}}
 	l := NewWithConstraints(row, col)
+	l.Add("")
 	require.NoError(t, l.Validate())
 	bl := l.(*bubbleLayout)
 	require.Equal(t, col, bl.hPref)
 	require.Equal(t, row, bl.wPref)
+}
+
+func TestConstraintExtension(t *testing.T) {
+	col := PreferenceGroup{{Min: 1, Preferred: 2, Max: 3}}
+	row := PreferenceGroup{{Min: 4, Preferred: 5, Max: 6}}
+	l := NewWithConstraints(row, col)
+	l.Add("")
+	l.Add("grow, wrap")
+	l.Add("")
+	l.Add("grow")
+	require.NoError(t, l.Validate())
+	bl := l.(*bubbleLayout)
+
+	// A "grow" bound from the distilled constraints should be added to each.
+	addedBound := BoundSize{Grow: true}
+	require.Equal(t, append(col, addedBound), bl.hPref)
+	require.Equal(t, append(row, addedBound), bl.wPref)
 }
