@@ -43,6 +43,7 @@ type PreferenceGroup []BoundSize
 //	        TODO: This is done in a loop. Can it be done in a single iteration?
 //	pass 3a: If "grow" is used, allocate remaining space to growers.
 //	pass 3b: Otherwise, allocate remaining space to "max" or cells with no max.
+//	        TODO: This is done in a loop. Can it be done in a single iteration?
 //
 //	TODO: Grow priorities.
 //	TODO: What does it mean to have Grow and Max? Can it go over the Max?
@@ -61,7 +62,7 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 	// totalToMax is the addition needed to get from Min/Preferred to Max
 	totalToMax := 0
 	hasGrow := make(map[int]struct{})
-	noGrowNoMax := make(map[int]struct{})
+	noGrowNoPref := make(map[int]struct{})
 
 	for idx, p := range pg {
 		if p.Min != 0 {
@@ -82,8 +83,8 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 		if p.Grow {
 			hasGrow[idx] = struct{}{}
 		}
-		if p.Max == 0 && !p.Grow {
-			noGrowNoMax[idx] = struct{}{}
+		if p.Max == 0 && p.Preferred == 0 && !p.Grow {
+			noGrowNoPref[idx] = struct{}{}
 		}
 	}
 
@@ -114,6 +115,7 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 		if evenSplit*len(hasPref) >= totalToPref {
 			if numToCompute == len(hasPref) {
 				// everyone gets their preference. Set a large evenSplit to avoid a divide by zero.
+				// this is a special case that can avoid extra iterations.
 				evenSplit = 100000
 			} else {
 				evenSplit = (remainder - totalToPref) / (numToCompute - len(hasPref))
@@ -161,16 +163,11 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 		if len(hasGrow) > 0 {
 			evenSplit = remainder / len(hasGrow)
 			set = hasGrow
+		} else if len(noGrowNoPref) > 0 {
+			evenSplit = remainder / len(noGrowNoPref)
+			set = noGrowNoPref
 		}
-		// reallocate a larger even split if totalToMax is reached.
-		if len(hasGrow) == 0 && evenSplit*len(hasMax) >= totalToMax {
-			if len(noGrowNoMax) == 0 {
-				evenSplit = 100000
-			} else {
-				evenSplit = (remainder - totalToMax) / len(noGrowNoMax)
-				set = noGrowNoMax
-			}
-		}
+
 		remainderList := make([]int, 0, len(set))
 		for idx := range set {
 			var sz int

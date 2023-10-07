@@ -227,18 +227,15 @@ func TestPreferenceGroup(t *testing.T) {
 			},
 			allocated: 80,
 			expected:  []int{20, 60},
-			/*
-				}, {
-					name: "No max no grow",
-					pg: PreferenceGroup{
-						{Preferred: 10, Max: 15},
-						{Preferred: 10},
-						{},
-					},
-					allocated: 60,
-					expected:  []int{10, 10, 40},
-
-			*/
+		}, {
+			name: "No max no grow",
+			pg: PreferenceGroup{
+				{Preferred: 10, Max: 15},
+				{Preferred: 10},
+				{},
+			},
+			allocated: 60,
+			expected:  []int{10, 10, 40},
 		}, {
 			name: "growToMax",
 			pg: PreferenceGroup{
