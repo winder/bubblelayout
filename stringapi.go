@@ -40,6 +40,7 @@ func isCardinal(str string) bool {
 func parseSize(sz string) (BoundSize, error) {
 	// normalize the inputLayout for some of the weirder options
 	sz = strings.ReplaceAll(sz, "null", "0")
+	sz = strings.ReplaceAll(sz, "nil", "0")
 	sz = strings.ReplaceAll(sz, "n", "0")
 	sz = strings.ReplaceAll(sz, "::", ":0:")
 	if strings.HasPrefix(sz, ":") {

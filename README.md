@@ -107,3 +107,17 @@ func (m myModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
   return m, nil
 }
 ```
+
+## Comments About Cell Sizes
+
+When defining a layout, width and height `BoundSize` preferences may be provided for each cell. The preferences can be set globally by using `bl.NewWithConstraints(width, height PreferenceGroup)` or on each cell by using **BoundSize** notation. The string definition is compatible with MigLayout:
+
+> A **bound size** is a size that optionally has a lower and/or upper bound and consists of one to three Unit Values. Practically it is a minimum/preferred/maximum size combination but none of the sizes are actually mandatory. If a size is missing (e.g. the preferred) it is null and will be replaced by the most appropriate value.
+>
+> The format is **"min:preferred:max"**, however there are shorter versions since for instance it is seldom needed to specify the maximum size.
+>
+> * A single value (E.g. **"10"**) sets only the preferred size and is exactly the same as "null:10:null" and **":10:"** and **"n:10:n"**.
+> * Two values (E.g. **"10:20"**) means minimum and preferred size and is exactly the same as **"10:20:null"** and **"10:20:"** and **"10:20:n"**
+> * The use a of an exclamation mark (E.g. **"20!"**) means that the value should be used for all size types and no colon may then be used in the string. It is the same as **"20:20:20"**.
+
+All of this to say: yes, I have brought **null** to go. I've taken the liberty of supporting **nil** as well.
