@@ -34,79 +34,179 @@ const (
 
 type PreferenceGroup []BoundSize
 
+// computeDims takes a list of BoundSizes and an allocated size and returns the actual size that should be allocated to each component.
+// TODO: detect if the minimums add up to more than the allocated size and generate a constraint violation error.
+//
+//	pass 1: allocate minimums. Priority is given left to right.
+//	        -> if minimums fill up the allocated size, everything else remains 0.
+//	pass 2: evenly expand up to min(preferred, max), or an even split.
+//	        TODO: This is done in a loop. Can it be done in a single iteration?
+//	pass 3a: If "grow" is used, allocate remaining space to growers.
+//	pass 3b: Otherwise, allocate remaining space to "max" or cells with no max.
+//
+//	TODO: Grow priorities.
+//	TODO: What does it mean to have Grow and Max? Can it go over the Max?
 func (pg PreferenceGroup) computeDims(allocated int) []int {
 	if len(pg) == 0 {
 		return nil
 	}
 
-	dims := make([]int, len(pg))
-	sum := 0
-	// start at Min or preference and Grow to the allocated size.
-	growers := make(map[int]struct{})
-	// no preference, start at Min and maybe Grow to Max.
-	empty := make(map[int]struct{})
-	evenMax := allocated / len(pg)
+	// cache some useful things
+	hasMin := make(map[int]struct{})
+	totalMin := 0
+	hasMax := make(map[int]struct{})
+	hasPref := make(map[int]struct{})
+	// totalToPref is the addition needed to get from Min to Preferred.
+	totalToPref := 0
+	// totalToMax is the addition needed to get from Min/Preferred to Max
+	totalToMax := 0
+	hasGrow := make(map[int]struct{})
+	noGrowNoMax := make(map[int]struct{})
+
 	for idx, p := range pg {
-		if p.Preferred != 0 {
-			dims[idx] = min(p.Preferred, evenMax)
-			sum += min(p.Preferred, evenMax)
-		} else {
-			dims[idx] = p.Min
-			sum += p.Min
-			// don't count as empty and a grower
-			if !p.Grow && p.Max != 0 {
-				empty[idx] = struct{}{}
+		if p.Min != 0 {
+			totalMin += p.Min
+			hasMin[idx] = struct{}{}
+		}
+		if p.Max != 0 {
+			hasMax[idx] = struct{}{}
+			if p.Preferred != 0 {
+				// if there is no preference, the max is already included in 'totalToPref'
+				totalToMax += p.Max - p.Preferred
 			}
 		}
-		if p.Grow || p.Max == 0 {
-			growers[idx] = struct{}{}
+		if p.Preferred != 0 || (p.Preferred == 0 && p.Max != 0) {
+			hasPref[idx] = struct{}{}
+			totalToPref += max(p.Preferred, p.Max) - p.Min
+		}
+		if p.Grow {
+			hasGrow[idx] = struct{}{}
+		}
+		if p.Max == 0 && !p.Grow {
+			noGrowNoMax[idx] = struct{}{}
 		}
 	}
 
-	// if all preferences are fullfilled and nothing is growing, return the Preferred sizes
-	if len(growers) == 0 && len(empty) == 0 {
-		return dims
-	}
+	dims := make([]int, len(pg))
+	remainder := allocated
+	// number of spots left to compute
+	numToCompute := len(pg)
 
-	// offer an even split to all empty and growing components.
-	// a second pass is made for growers in case the empty components have a Max.
-	remainder := allocated - sum
-
-	// keep loping until space runs out or the maximizable components are maximized.
-	for remainder > (len(empty)+len(growers)) && len(empty) > 0 {
-		split := remainder / (len(growers) + len(empty))
+	// Pass 1: allocate minimums, exit early if not enough space.
+	// don't range over min to avoid nondeterminism
+	if len(hasMin) > 0 {
 		for idx, p := range pg {
-			if _, ok := empty[idx]; ok {
-				// otherwise Grow up to the Max or split
-				diff := p.Max - dims[idx]
-				if p.Max != 0 && diff < split {
-					// Grow to Max
-					dims[idx] = dims[idx] + diff
-					remainder -= diff
-					delete(empty, idx)
-				} else {
-					// Grow to split
-					dims[idx] = dims[idx] + split
-					remainder -= split
+			if p.Min != 0 {
+				sz := min(p.Min, remainder)
+				dims[idx] = sz
+				remainder -= sz
+				if remainder == 0 {
+					return dims
 				}
 			}
 		}
 	}
 
-	// if there is a remainder, loop through again but this time only add to the growers.
-	last := -1
-	if remainder != 0 && len(growers) != 0 {
-		split := remainder / len(growers)
-		for idx := range growers {
-			dims[idx] = dims[idx] + split
-			remainder -= split
-			last = idx
+	// pass 2: even split, stopping at preferred (or max).
+	growToPrefferred := func() {
+		evenSplit := remainder / numToCompute
+		// reallocate a larger even split if totalToPref is reached.
+		if evenSplit*len(hasPref) >= totalToPref {
+			if numToCompute == len(hasPref) {
+				// everyone gets their preference. Set a large evenSplit to avoid a divide by zero.
+				evenSplit = 100000
+			} else {
+				evenSplit = (remainder - totalToPref) / (numToCompute - len(hasPref))
+			}
+		}
+		for idx, p := range pg {
+			var sz int
+			if _, ok := hasPref[idx]; ok {
+				if p.Preferred != 0 {
+					// stop at preferred if needed
+					sz = min(p.Preferred-dims[idx], evenSplit)
+					if sz+dims[idx] >= p.Preferred {
+						delete(hasPref, idx)
+					}
+				} else if p.Max != 0 {
+					// stop at max if there is no preference
+					sz = min(p.Max-dims[idx], evenSplit)
+					if sz+dims[idx] >= p.Max {
+						// If max is reached, that item is done. Remove it from numToCompute.
+						numToCompute--
+						// it is done, remove from lists for later
+						delete(hasGrow, idx)
+						delete(hasMax, idx)
+						delete(hasPref, idx)
+					}
+				}
+				dims[idx] += sz
+				remainder -= sz
+			}
 		}
 	}
+	for len(hasPref) > 0 && remainder > 0 {
+		growToPrefferred()
+	}
 
-	// if there is still a remainder, it is a rounding error. Cell it to the last grower
-	if last != -1 && remainder != 0 {
-		dims[last] = dims[last] + remainder
+	// Check if we're done. Either there is no more space, or nothing left to grow.
+	if remainder == 0 || numToCompute == 0 {
+		return dims
+	}
+
+	// pass 3: even split amongst growers OR non-growers with no max.
+	growToMax := func() []int {
+		var set map[int]struct{}
+		var evenSplit int
+		if len(hasGrow) > 0 {
+			evenSplit = remainder / len(hasGrow)
+			set = hasGrow
+		}
+		// reallocate a larger even split if totalToMax is reached.
+		if len(hasGrow) == 0 && evenSplit*len(hasMax) >= totalToMax {
+			if len(noGrowNoMax) == 0 {
+				evenSplit = 100000
+			} else {
+				evenSplit = (remainder - totalToMax) / len(noGrowNoMax)
+				set = noGrowNoMax
+			}
+		}
+		remainderList := make([]int, 0, len(set))
+		for idx := range set {
+			var sz int
+			if pg[idx].Max != 0 {
+				sz = min(pg[idx].Max-dims[idx], evenSplit)
+				if sz+dims[idx] >= pg[idx].Max {
+					// it is done
+					delete(hasGrow, idx)
+					delete(hasMax, idx)
+				}
+			} else {
+				sz = evenSplit
+			}
+			dims[idx] += sz
+			remainder -= sz
+			if pg[idx].Max != dims[idx] {
+				remainderList = append(remainderList, idx)
+			}
+		}
+		return remainderList
+	}
+
+	remainderList := growToMax()
+	for len(remainderList) > 0 && len(remainderList) < remainder {
+		remainderList = growToMax()
+	}
+
+	// allocate the remainder if any
+	if remainder > 0 {
+		for idx := range remainderList {
+			dims[idx] += 1
+			remainder -= 1
+			if remainder == 0 {
+				break
+			}
+		}
 	}
 
 	return dims
@@ -617,12 +717,25 @@ func (bl *bubbleLayout) Validate() error {
 
 		hPref, wPref := distillPreferences(bl.resizeCache)
 
-		if len(bl.hPref) == 0 {
-			bl.hPref = hPref
+		// If the user provided constraints are shorter than the auto generated ones, append the distilled ones.
+		// TODO: in the future, cell width/height make this more complicated.
+		// 		 These distilled preferences would need to be merged with the user provided ones.
+		// TODO: this flexibility may not be needed. Should constraints be more strict?
+		appendPref := func(user, distilled PreferenceGroup) PreferenceGroup {
+			if len(user) < len(distilled) {
+				return append(user, distilled[len(user):]...)
+			}
+			return user
+		}
+		bl.hPref = appendPref(bl.hPref, hPref)
+		bl.wPref = appendPref(bl.wPref, wPref)
+
+		if len(bl.hPref) != len(bl.resizeCache) {
+			return fmt.Errorf("height preferences do not match the cell height")
 		}
 
-		if len(bl.wPref) == 0 {
-			bl.wPref = wPref
+		if len(bl.resizeCache) > 0 && len(bl.wPref) != len(bl.resizeCache[0]) {
+			return fmt.Errorf("width preferences do not match the cell height")
 		}
 
 		return checkPreferenceConstraints(bl.hPref, bl.wPref)
