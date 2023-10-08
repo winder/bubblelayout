@@ -205,9 +205,11 @@ func TestResize(t *testing.T) {
 	const width = 80
 	const height = 40
 	testcases := []struct {
-		name string
-		in   func() bl.BubbleLayout
-		out  map[bl.ID]bl.Size
+		name      string
+		wOverride int
+		hOverride int
+		in        func() bl.BubbleLayout
+		out       map[bl.ID]bl.Size
 	}{
 		{
 			name: "simple",
@@ -221,6 +223,35 @@ func TestResize(t *testing.T) {
 				1: {Width: 10, Height: height},
 				2: {Width: width - 10, Height: height},
 			},
+		}, {
+			name: "dock",
+			in: func() bl.BubbleLayout {
+				l := bl.New()
+				l.Add("")
+				l.Add("span 2")
+				l.Add("north 5!")
+				return l
+			},
+			out: map[bl.ID]bl.Size{
+				1: {Width: 27, Height: 35},
+				2: {Width: 53, Height: 35},
+				3: {Width: 80, Height: 5},
+			},
+		}, {
+			name:      "empty remainder",
+			hOverride: 9,
+			in: func() bl.BubbleLayout {
+				l := bl.New()
+				l.Add("width 9!")
+				l.Add("width 9!")
+				l.Add("")
+				return l
+			},
+			out: map[bl.ID]bl.Size{
+				1: {Width: 9, Height: 9},
+				2: {Width: 9, Height: 9},
+				3: {Width: 62, Height: 9},
+			},
 		},
 	}
 
@@ -228,7 +259,15 @@ func TestResize(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			l := tc.in()
-			msg := l.Resize(width, height)
+			w := width
+			h := height
+			if tc.wOverride != 0 {
+				w = tc.wOverride
+			}
+			if tc.hOverride != 0 {
+				h = tc.hOverride
+			}
+			msg := l.Resize(w, h)
 			for id, size := range tc.out {
 				actual, err := msg.Size(id)
 				require.NoError(t, err)
