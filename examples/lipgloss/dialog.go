@@ -69,17 +69,33 @@ func (m dialogModel) View() string {
 		cancelButton = activeButtonStyle.Render("Maybe")
 	}
 
-	question := lipgloss.NewStyle().Width(50).Align(lipgloss.Center).Render("Are you sure you want to eat marmalade?")
-	buttons := lipgloss.JoinHorizontal(lipgloss.Top, okButton, cancelButton)
-	ui := lipgloss.JoinVertical(lipgloss.Center, question, buttons)
+	var dialog string
+	// 55 is the dialog, border and  padding  (50, 2, 3).
+	if m.size.Width < 55 || m.size.Height < 7 {
+		dialog = lipgloss.NewStyle().
+			Width(m.size.Width-3). // minus padding below.
+			Height(m.size.Height).
+			Align(lipgloss.Center, lipgloss.Center).
+			Render("Your terminal is too small to display this dialog.")
+	} else {
+		question := lipgloss.NewStyle().Width(50).Align(lipgloss.Center).Render("Are you sure you want to eat marmalade?")
+		buttons := lipgloss.JoinHorizontal(lipgloss.Top, okButton, cancelButton)
+		ui := lipgloss.JoinVertical(lipgloss.Center, question, buttons)
 
-	//These whitespace characters are weird, had to fuss around with  the pad amount.
-	dialog := lipgloss.Place(m.size.Width-6, m.size.Height,
-		lipgloss.Center, lipgloss.Center,
-		dialogBoxStyle.Render(ui),
-		lipgloss.WithWhitespaceChars("猫咪"),
-		lipgloss.WithWhitespaceForeground(subtle),
-	)
+		//These whitespace characters are weird, had to fuss around with  the pad amount.
+		dialog = lipgloss.Place(m.size.Width-6, m.size.Height,
+			lipgloss.Center, lipgloss.Center,
+			dialogBoxStyle.Render(ui),
+			lipgloss.WithWhitespaceChars("猫咪"),
+			lipgloss.WithWhitespaceForeground(subtle),
+		)
+	}
 
-	return lipgloss.NewStyle().PaddingLeft(3).MaxWidth(m.size.Width).MaxHeight(m.size.Height).Render(dialog)
+	return lipgloss.NewStyle().
+		PaddingLeft(3).
+		Width(m.size.Width).
+		Height(m.size.Height).
+		MaxWidth(m.size.Width).
+		MaxHeight(m.size.Height).
+		Render(dialog)
 }

@@ -90,5 +90,9 @@ func (m statusbarModel) View() string {
 		fishCake,
 	)
 
-	return statusBarStyle.Width(m.size.Width).MaxWidth(m.size.Width).Render(bar)
+	return statusBarStyle.
+		Width(m.size.Width).
+		MaxWidth(m.size.Width).
+		MaxHeight(m.size.Height).
+		Render(bar)
 }

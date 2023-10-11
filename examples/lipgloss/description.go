@@ -52,5 +52,10 @@ func (m descModel) View() string {
 		infoStyle.Render("From Charm"+divider+url("https://github.com/charmbracelet/lipgloss")),
 	)
 
-	return lipgloss.NewStyle().MaxWidth(m.size.Width).Render(desc)
+	return lipgloss.NewStyle().
+		AlignVertical(lipgloss.Center).
+		Height(m.size.Height).
+		MaxHeight(m.size.Height).
+		MaxWidth(m.size.Width).
+		Render(desc)
 }

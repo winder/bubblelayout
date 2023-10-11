@@ -11,7 +11,7 @@ import (
 var (
 	inactiveTabBorder = tabBorderWithBottom("┴", "─", "┴")
 	activeTabBorder   = tabBorderWithBottom("┘", " ", "└")
-	docStyle          = lipgloss.NewStyle().Padding(1, 2, 1, 2)
+	docStyle          = lipgloss.NewStyle().PaddingLeft(2).PaddingRight(2)
 	highlightColor    = lipgloss.AdaptiveColor{Light: "#874BFD", Dark: "#7D56F4"}
 	inactiveTabStyle  = lipgloss.NewStyle().Border(inactiveTabBorder, true).BorderForeground(highlightColor).Padding(0, 1)
 	activeTabStyle    = inactiveTabStyle.Copy().Border(activeTabBorder, true)
@@ -50,6 +50,9 @@ func (m tabModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.size, err = msg.Size(m.ID)
 		if err != nil {
 			return m, tea.Quit
+		}
+		if m.size.Height > 3 {
+			m.size.Height = m.size.Height
 		}
 	}
 
@@ -95,7 +98,7 @@ func (m tabModel) View() string {
 	remainder := m.size.Width - w - 4
 	if remainder > 0 {
 		// Height = 2 + 1 for the border
-		rs := remainderStyle.Copy().Width(remainder).Height(2)
+		rs := remainderStyle.Copy().Width(remainder).Height(m.size.Height - 1)
 		renderedTabs = append(renderedTabs, rs.Render(""))
 	}
 

@@ -58,8 +58,8 @@ func (m historyModel) View() string {
 	return lipgloss.NewStyle().
 		MarginLeft(1 + m.leftMargin).
 		MarginRight(2).
-		MaxHeight(m.size.Height).
 		Height(m.size.Height).
+		MaxHeight(m.size.Height).
 		MaxWidth(m.size.Width).
 		Render(history)
 }

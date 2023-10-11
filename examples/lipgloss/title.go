@@ -59,7 +59,7 @@ func (m titleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m titleModel) View() string {
 	var buf strings.Builder
-	for i := 0; i < m.size.Height; i++ {
+	for i := 0; i < m.size.Height-2; i++ {
 		const offset = 2
 		c := lipgloss.Color(colors[(i+m.colorOffset)%len(colors)][0])
 		fmt.Fprint(&buf, titleStyle.Copy().MarginLeft(2+i*offset).Background(c))
@@ -67,5 +67,5 @@ func (m titleModel) View() string {
 			buf.WriteRune('\n')
 		}
 	}
-	return lipgloss.NewStyle().MaxWidth(m.size.Width).Render(buf.String())
+	return lipgloss.NewStyle().Margin(1, 0).MaxHeight(m.size.Height).MaxWidth(m.size.Width).Render(buf.String())
 }

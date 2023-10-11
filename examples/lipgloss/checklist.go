@@ -10,41 +10,50 @@ import (
 	bl "github.com/winder/bubblelayout"
 )
 
-var list = lipgloss.NewStyle().
-	PaddingLeft(4).
-	PaddingRight(2)
+var (
+	list = lipgloss.NewStyle().
+		PaddingLeft(4).
+		PaddingRight(2)
 
-var listHeader = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderBottom(true).
-	BorderForeground(subtle).
-	PaddingRight(2)
+	listHeader = lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderBottom(true).
+			BorderForeground(subtle).
+			PaddingRight(2)
 
-var listItem = lipgloss.NewStyle().PaddingLeft(2).Render
+	listItem = lipgloss.NewStyle().PaddingLeft(2).Render
 
-var checkMark = lipgloss.NewStyle().SetString("✓").
-	Foreground(special).
-	PaddingRight(1).
-	String()
+	checkMark = lipgloss.NewStyle().SetString("✓").
+			Foreground(special).
+			PaddingRight(1).
+			String()
 
-var listDone = func(s string) string {
-	return checkMark + lipgloss.NewStyle().
-		Strikethrough(true).
-		Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
-		Render(s)
-}
+	listDone = func(s string) string {
+		return checkMark + lipgloss.NewStyle().
+			Strikethrough(true).
+			Foreground(lipgloss.AdaptiveColor{Light: "#969B86", Dark: "#696969"}).
+			Render(s)
+	}
 
-var finalWithSeparator = func(width, height int, view string) string {
-	return lipgloss.NewStyle().Align(lipgloss.Left).
-		Border(lipgloss.NormalBorder(), false, true, false, false).
-		BorderForeground(subtle).
-		MarginTop(1).
-		Width(width - 1). // space for border
-		Height(height).
-		MaxWidth(width).
-		MaxHeight(height - 1). // the right border  was going too low...
-		Render(view)
-}
+	rightBorder = func(width int, view string) string {
+		return lipgloss.NewStyle().Align(lipgloss.Left).
+			Border(lipgloss.NormalBorder(), false, true, false, false).
+			BorderForeground(subtle).
+			Width(width - 1). // space for border
+			Render(view)
+	}
+	finalWithSeparator = func(width, height int, view string) string {
+		return lipgloss.NewStyle().Align(lipgloss.Left).
+			Border(lipgloss.NormalBorder(), false, true, false, false).
+			BorderForeground(subtle).
+			MarginTop(1).
+			Width(width - 1). // space for border
+			Height(height).
+			MaxWidth(width).
+			MaxHeight(height - 1). // the right border  was going too low...
+			Render(view)
+	}
+)
 
 type listItem2 struct {
 	done bool
@@ -115,5 +124,14 @@ func (m listModel) View() string {
 		lipgloss.JoinVertical(lipgloss.Left, items...),
 	)
 
-	return finalWithSeparator(m.size.Width, m.size.Height, view)
+	box := rightBorder(m.size.Width, view)
+
+	return lipgloss.NewStyle().
+		MarginTop(1).
+		MarginBottom(1).
+		Width(m.size.Width).
+		Height(m.size.Height).
+		MaxWidth(m.size.Width).
+		MaxHeight(m.size.Height).
+		Render(box)
 }

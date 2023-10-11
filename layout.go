@@ -147,7 +147,7 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 			}
 		}
 	}
-	for len(hasPref) > 0 && remainder > 0 {
+	for len(hasPref) > 0 && remainder > 0 && remainder > numToCompute {
 		growToPrefferred()
 	}
 
@@ -197,7 +197,7 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 
 	// allocate the remainder if any
 	if remainder > 0 {
-		for idx := range remainderList {
+		for _, idx := range remainderList {
 			dims[idx] += 1
 			remainder -= 1
 			if remainder == 0 {
