@@ -1,6 +1,7 @@
 package bubblelayout_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -251,6 +252,42 @@ func TestResize(t *testing.T) {
 				1: {Width: 9, Height: 9},
 				2: {Width: 9, Height: 9},
 				3: {Width: 62, Height: 9},
+			},
+		}, {
+			name: "Min and preferred grows to preferred.",
+			in: func() bl.BubbleLayout {
+				l := bl.New()
+				l.Add("width 9:10")
+				l.Add("width 9:10")
+				l.Add("width 9:10")
+				return l
+			},
+			out: map[bl.ID]bl.Size{
+				1: {Width: 10, Height: height},
+				2: {Width: 10, Height: height},
+				3: {Width: 10, Height: height},
+			},
+		}, {
+			// This is a regression test for a bug where the layout would
+			// have an infinite loop. It happens when there is a remainder
+			// less than the number of bounds that still have unmet preferences.
+			// It led to a case where "remainder / len(pref)" equals 0, so the
+			// iterations would never finish out the remainder.
+			name: "not enough room infinite loop regression test",
+			in: func() bl.BubbleLayout {
+				l := bl.New()
+				sz := width / 2
+				l.Add(fmt.Sprintf("width %d", (width/4)-1))
+				l.Add(fmt.Sprintf("width %d", sz))
+				l.Add(fmt.Sprintf("width %d", sz))
+				l.Add(fmt.Sprintf("width %d", sz))
+				return l
+			},
+			out: map[bl.ID]bl.Size{
+				1: {Width: (width / 4) - 1, Height: height},
+				2: {Width: width / 4, Height: height},
+				3: {Width: width / 4, Height: height},
+				4: {Width: width / 4, Height: height},
 			},
 		},
 	}
