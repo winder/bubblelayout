@@ -407,8 +407,8 @@ func (bl *bubbleLayout) Dock(dock Dock) ID {
 }
 
 type preferenceConstraintError struct {
-	row           bool
-	idx, min, max int
+	row                 bool
+	idx, min, pref, max int
 }
 
 func (p preferenceConstraintError) Error() string {
@@ -421,27 +421,36 @@ func (p preferenceConstraintError) Error() string {
 		dir = "col"
 		dim = "height"
 	}
-	return fmt.Sprintf("constraint violation: %s %d: Min %s (%d), Max %s (%d)", dir, p.idx, dim, p.min, dim, p.max)
+	return fmt.Sprintf("constraint violation: %s %d: Min %s (%d), Preferred %s (%d) Max %s (%d)", dir, p.idx, dim, p.min, dim, p.pref, dim, p.max)
 }
 
-func makeRowViolation(idx, min, max int) error {
-	return preferenceConstraintError{row: true, idx: idx, min: min, max: max}
+func makeRowViolation(idx, min, preferred, max int) error {
+	return preferenceConstraintError{row: true, idx: idx, min: min, pref: preferred, max: max}
 }
 
-func makeColViolation(idx, min, max int) error {
-	return preferenceConstraintError{row: false, idx: idx, min: min, max: max}
+func makeColViolation(idx, min, preferred, max int) error {
+	return preferenceConstraintError{row: false, idx: idx, min: min, pref: preferred, max: max}
 }
 
 func checkPreferenceConstraints(hPref, wPref PreferenceGroup) error {
+	hasConstraintViolation := func(b BoundSize) bool {
+		if b.Max != 0 {
+			return b.Min > b.Max || b.Preferred > b.Max
+		}
+		if b.Preferred != 0 {
+			return b.Min > b.Preferred
+		}
+		return false
+	}
 	for row, p := range hPref {
-		if p.Min > p.Max {
-			return makeRowViolation(row, p.Min, p.Max)
+		if hasConstraintViolation(p) {
+			return makeRowViolation(row, p.Min, p.Preferred, p.Max)
 		}
 	}
 
 	for col, p := range wPref {
-		if p.Min > p.Max {
-			return makeColViolation(col, p.Min, p.Max)
+		if hasConstraintViolation(p) {
+			return makeColViolation(col, p.Min, p.Preferred, p.Max)
 		}
 	}
 

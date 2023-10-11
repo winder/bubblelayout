@@ -31,26 +31,63 @@ func TestPreferenceConstraints(t *testing.T) {
 			},
 			err: nil,
 		}, {
+			name: "ignore zero value max",
+			row: []BoundSize{
+				{Min: 1, Preferred: 1, Max: 0},
+			},
+			col: []BoundSize{
+				{Min: 1, Preferred: 1, Max: 0},
+			},
+			err: nil,
+		}, {
 			name: "row violation",
 			row: []BoundSize{
-				{Min: 10, Preferred: 1, Max: 1},
+				{Min: 10, Preferred: 0, Max: 1},
 			},
 			col: []BoundSize{},
-			err: makeRowViolation(0, 10, 1),
+			err: makeRowViolation(0, 10, 0, 1),
 		}, {
 			name: "col violation",
 			row:  []BoundSize{},
 			col: []BoundSize{
-				{Min: 10, Preferred: 1, Max: 1},
+				{Min: 10, Preferred: 0, Max: 1},
 			},
-			err: makeColViolation(0, 10, 1),
+			err: makeColViolation(0, 10, 0, 1),
 		}, {
 			name: "violation index",
 			row:  []BoundSize{},
 			col: []BoundSize{
-				{}, {}, {}, {}, {Min: 10, Preferred: 1, Max: 1},
+				{}, {}, {}, {}, {Min: 10, Preferred: 0, Max: 1},
 			},
-			err: makeColViolation(4, 10, 1),
+			err: makeColViolation(4, 10, 0, 1),
+		}, {
+			name: "preferred row violation 1",
+			row: []BoundSize{
+				{Min: 10, Preferred: 1, Max: 0},
+			},
+			col: []BoundSize{},
+			err: makeRowViolation(0, 10, 1, 0),
+		}, {
+			name: "preferred row violation 2",
+			row: []BoundSize{
+				{Min: 1, Preferred: 3, Max: 2},
+			},
+			col: []BoundSize{},
+			err: makeRowViolation(0, 1, 3, 2),
+		}, {
+			name: "preferred col violation 1",
+			row:  []BoundSize{},
+			col: []BoundSize{
+				{Min: 10, Preferred: 1, Max: 0},
+			},
+			err: makeColViolation(0, 10, 1, 0),
+		}, {
+			name: "preferred col violation 2",
+			row:  []BoundSize{},
+			col: []BoundSize{
+				{Min: 1, Preferred: 3, Max: 2},
+			},
+			err: makeColViolation(0, 1, 3, 2),
 		},
 	}
 
@@ -697,7 +734,7 @@ func TestValidate_FailureHeight(t *testing.T) {
 	l := New()
 	l.Cell(Cell{MinHeight: 100})
 	l.Cell(Cell{MaxHeight: 10})
-	require.ErrorContains(t, l.Validate(), makeRowViolation(0, 100, 10).Error())
+	require.ErrorContains(t, l.Validate(), makeRowViolation(0, 100, 0, 10).Error())
 }
 
 func TestValidate_FailureWidth(t *testing.T) {
@@ -705,7 +742,7 @@ func TestValidate_FailureWidth(t *testing.T) {
 	l.Cell(Cell{MinWidth: 100})
 	l.Wrap()
 	l.Cell(Cell{MaxWidth: 10})
-	require.ErrorContains(t, l.Validate(), makeColViolation(0, 100, 10).Error())
+	require.ErrorContains(t, l.Validate(), makeColViolation(0, 100, 0, 10).Error())
 }
 
 func TestTooManayConstraints(t *testing.T) {
