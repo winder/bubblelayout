@@ -147,6 +147,7 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 			}
 		}
 	}
+
 	for len(hasPref) > 0 && remainder > 0 && remainder > numToCompute {
 		growToPrefferred()
 	}

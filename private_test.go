@@ -257,6 +257,18 @@ func TestPreferenceGroup(t *testing.T) {
 			allocated: 81,
 			expected:  []int{41, 40},
 		}, {
+			// There was a bug where the slice index was used instead of the value
+			// This would cause remainder space be assigned to the wrong cell, which
+			// could cause a max size constraint to be violated.
+			name: "remainder regression - use value instead of index",
+			pg: PreferenceGroup{
+				{Max: 40},
+				{},
+				{},
+			},
+			allocated: 121,
+			expected:  []int{40, 41, 40},
+		}, {
 			name: "even split above preferred",
 			pg: PreferenceGroup{
 				{Preferred: 10, Max: 100, Grow: true},

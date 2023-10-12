@@ -289,6 +289,18 @@ func TestResize(t *testing.T) {
 				3: {Width: width / 4, Height: height},
 				4: {Width: width / 4, Height: height},
 			},
+		}, {
+			name: "Remainder doesn't go to fully allocated cells.",
+			in: func() bl.BubbleLayout {
+				l := bl.New()
+				l.Add("width 10!")
+				l.Add(fmt.Sprintf("grow, width 0:%d:1000", width-11))
+				return l
+			},
+			out: map[bl.ID]bl.Size{
+				1: {Width: 10, Height: height},
+				2: {Width: width - 10, Height: height},
+			},
 		},
 	}
 
