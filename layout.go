@@ -170,7 +170,10 @@ func (pg PreferenceGroup) computeDims(allocated int) []int {
 		}
 
 		remainderList := make([]int, 0, len(set))
-		for idx := range set {
+		for idx := range pg {
+			if _, ok := set[idx]; !ok {
+				continue
+			}
 			var sz int
 			if pg[idx].Max != 0 {
 				sz = min(pg[idx].Max-dims[idx], evenSplit)
