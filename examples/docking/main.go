@@ -27,10 +27,10 @@ func New() tea.Model {
 	models = append(models, util.NewSimpleModel("10", layout.Add("wrap")))
 	models = append(models, util.NewSimpleModel("11", layout.Add("span 2 2")))
 
-	models = append(models, util.NewSimpleModel("12", layout.Add("dock north 1:1:1")))
-	models = append(models, util.NewSimpleModel("13", layout.Add("dock south 1:1:1")))
-	models = append(models, util.NewSimpleModel("14", layout.Add("dock west 1:10:10")))
-	models = append(models, util.NewSimpleModel("15", layout.Add("dock east 1:10:10")))
+	models = append(models, util.NewSimpleModel("12", layout.Add("dock north 1!")))
+	models = append(models, util.NewSimpleModel("13", layout.Add("dock south 1!")))
+	models = append(models, util.NewSimpleModel("14", layout.Add("dock west 1:10")))
+	models = append(models, util.NewSimpleModel("15", layout.Add("dock east 1:10")))
 
 	view := func(models []tea.Model) string {
 		// Note: docks should be joined in the order they are defined.
