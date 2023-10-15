@@ -1,5 +1,5 @@
 
-name: Go
+name: tests and coverage
 
 on:
   push:
