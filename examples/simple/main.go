@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -69,14 +67,6 @@ func (m layoutModel) View() string {
 }
 
 func main() {
-	layoutModel := New().(layoutModel)
-	msg := layoutModel.layout.Resize(80, 40)
-	fmt.Println(msg.Size(layoutModel.leftID))
-	msg = layoutModel.layout.Resize(80, 40)
-	fmt.Println(msg.Size(layoutModel.leftID))
-	msg = layoutModel.layout.Resize(80, 40)
-	fmt.Println(msg.Size(layoutModel.leftID))
-
 	p := tea.NewProgram(New())
 	p.Run()
 }
